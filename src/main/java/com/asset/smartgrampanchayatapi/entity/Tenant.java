@@ -6,7 +6,10 @@ import java.util.UUID;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 @Entity
@@ -30,11 +33,25 @@ public class Tenant {
     @Column(nullable = false)
     private String name;
 
-    @Column(name = "display_name")
-    private String displayName;
-
     @Column(name = "gp_code", nullable = false, length = 20)
     private String gpCode;
+
+    @Column(name = "display_name_mr", length = 255)
+    private String displayNameMr;
+
+    @Column(name = "display_name_en", length = 255)
+    private String displayNameEn;
+
+    @Column(name = "taluka_mr", length = 255)
+    private String talukaMr;
+
+    @Column(name = "taluka_en", length = 255)
+    private String talukaEn;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "district_id", nullable = false)
+    private District district;
+
 
     @Column(nullable = false, length = 32)
     private String status;
@@ -65,9 +82,6 @@ public class Tenant {
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
-
-    @Column(name = "deleted_at")
-    private Instant deletedAt;
 
     protected Tenant() {
     }
@@ -104,20 +118,52 @@ public class Tenant {
         this.name = name;
     }
 
-    public String getDisplayName() {
-        return displayName;
-    }
-
-    public void setDisplayName(String displayName) {
-        this.displayName = displayName;
-    }
-
     public String getGpCode() {
         return gpCode;
     }
 
     public void setGpCode(String gpCode) {
         this.gpCode = gpCode;
+    }
+
+    public String getDisplayNameMr() {
+        return displayNameMr;
+    }
+
+    public void setDisplayNameMr(String displayNameMr) {
+        this.displayNameMr = displayNameMr;
+    }
+
+    public String getDisplayNameEn() {
+        return displayNameEn;
+    }
+
+    public void setDisplayNameEn(String displayNameEn) {
+        this.displayNameEn = displayNameEn;
+    }
+
+    public String getTalukaMr() {
+        return talukaMr;
+    }
+
+    public void setTalukaMr(String talukaMr) {
+        this.talukaMr = talukaMr;
+    }
+
+    public String getTalukaEn() {
+        return talukaEn;
+    }
+
+    public void setTalukaEn(String talukaEn) {
+        this.talukaEn = talukaEn;
+    }
+
+    public District getDistrict() {
+        return district;
+    }
+
+    public void setDistrict(District district) {
+        this.district = district;
     }
 
     public String getStatus() {
@@ -198,13 +244,5 @@ public class Tenant {
 
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
-    }
-
-    public Instant getDeletedAt() {
-        return deletedAt;
-    }
-
-    public void setDeletedAt(Instant deletedAt) {
-        this.deletedAt = deletedAt;
     }
 }

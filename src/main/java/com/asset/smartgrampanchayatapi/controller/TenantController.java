@@ -26,7 +26,7 @@ public class TenantController {
     }
 
     @GetMapping
-    @Operation(summary = "Get tenant by name, code, or display name (case-insensitive)")
+    @Operation(summary = "Get tenant by tenant code (case-sensitive, exact match)")
     @ApiResponse(
             responseCode = "200",
             description = "Tenant found"
@@ -37,13 +37,13 @@ public class TenantController {
             content = @Content
     )
     public ResponseEntity<Tenant> getTenant(
-            @RequestParam("tenantName") String tenantName
+            @RequestParam("tenantCode") String tenantCode
     ) {
-        if (tenantName == null || tenantName.isBlank()) {
+        if (tenantCode == null || tenantCode.isBlank()) {
             return ResponseEntity.badRequest().build();
         }
         return tenantRepository
-                .findActiveByTenantNameOrCodeOrDisplayName(tenantName.trim())
+                .findByTenantCode(tenantCode.trim())
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
