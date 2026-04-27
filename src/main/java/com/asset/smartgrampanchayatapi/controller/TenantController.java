@@ -26,7 +26,7 @@ public class TenantController {
     }
 
     @GetMapping
-    @Operation(summary = "Get tenant by tenant code (case-sensitive, exact match)")
+    @Operation(summary = "Get district tenant by tenant code (case-sensitive, exact match)")
     @ApiResponse(
             responseCode = "200",
             description = "Tenant found"
