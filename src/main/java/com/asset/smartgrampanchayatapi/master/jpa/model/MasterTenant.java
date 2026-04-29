@@ -1,4 +1,4 @@
-package com.asset.smartgrampanchayatapi.entity;
+package com.asset.smartgrampanchayatapi.master.jpa.model;
 
 import java.time.LocalDate;
 import java.util.UUID;

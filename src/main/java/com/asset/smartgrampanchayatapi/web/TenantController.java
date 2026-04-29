@@ -1,4 +1,4 @@
-package com.asset.smartgrampanchayatapi.controller;
+package com.asset.smartgrampanchayatapi.web;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -6,8 +6,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.asset.smartgrampanchayatapi.entity.Tenant;
-import com.asset.smartgrampanchayatapi.repository.TenantRepository;
+import com.asset.smartgrampanchayatapi.district.jpa.model.ShardTenant;
+import com.asset.smartgrampanchayatapi.district.service.DistrictTenantLookupService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -19,14 +19,14 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @Tag(name = "Tenants", description = "Tenant lookup APIs")
 public class TenantController {
 
-    private final TenantRepository tenantRepository;
+    private final DistrictTenantLookupService districtTenantLookupService;
 
-    public TenantController(TenantRepository tenantRepository) {
-        this.tenantRepository = tenantRepository;
+    public TenantController(DistrictTenantLookupService districtTenantLookupService) {
+        this.districtTenantLookupService = districtTenantLookupService;
     }
 
     @GetMapping
-    @Operation(summary = "Get district tenant by tenant code (case-sensitive, exact match)")
+    @Operation(summary = "Get district tenant by tenant code (master routing, then shard tenants table)")
     @ApiResponse(
             responseCode = "200",
             description = "Tenant found"
@@ -36,13 +36,18 @@ public class TenantController {
             description = "Not found",
             content = @Content
     )
-    public ResponseEntity<Tenant> getTenant(
+    @ApiResponse(
+            responseCode = "503",
+            description = "District database unavailable",
+            content = @Content
+    )
+    public ResponseEntity<ShardTenant> getTenant(
             @RequestParam("tenantCode") String tenantCode
     ) {
         if (tenantCode == null || tenantCode.isBlank()) {
             return ResponseEntity.badRequest().build();
         }
-        return tenantRepository
+        return districtTenantLookupService
                 .findByTenantCode(tenantCode.trim())
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());

@@ -1,10 +1,8 @@
-package com.asset.smartgrampanchayatapi.entity;
+package com.asset.smartgrampanchayatapi.district.jpa.model;
 
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
-
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -12,20 +10,17 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 /**
- * District {@code tenants} row: header / GP metadata (denormalized district & taluka). No {@code district_id} FK in this
- * shape — names come from {@code district_name_*} / {@code taluka_*}. In a single dev DB with central {@code tenants} also
- * present, this entity maps to {@code district_tenants}; use {@code tenants} when this PU only sees the shard.
+ * Tenant row from a district shard {@code tenants} table (district DB only — not master).
  */
 @Entity
-@Table(name = "district_tenants")
-@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
-public class Tenant {
+@Table(name = "tenants")
+public class ShardTenant {
 
     @Id
     @Column(nullable = false, updatable = false)
     private UUID id;
 
-    @Column(name = "tenant_id", nullable = false, unique = true, length = 32)
+    @Column(name = "tenant_id", length = 20)
     private String tenantId;
 
     @Column(name = "tenant_code", nullable = false, unique = true, length = 10)
@@ -34,25 +29,25 @@ public class Tenant {
     @Column(nullable = false)
     private String name;
 
-    @Column(name = "display_name_en")
+    @Column(name = "display_name_en", length = 255)
     private String displayNameEn;
 
-    @Column(name = "display_name_mr")
+    @Column(name = "display_name_mr", length = 255)
     private String displayNameMr;
 
-    @Column(name = "gp_code", nullable = false, length = 50)
+    @Column(name = "gp_code", length = 64)
     private String gpCode;
 
-    @Column(name = "district_name_en")
+    @Column(name = "district_name_en", length = 255)
     private String districtNameEn;
 
-    @Column(name = "district_name_mr")
+    @Column(name = "district_name_mr", length = 255)
     private String districtNameMr;
 
-    @Column(name = "taluka_en")
+    @Column(name = "taluka_en", length = 255)
     private String talukaEn;
 
-    @Column(name = "taluka_mr")
+    @Column(name = "taluka_mr", length = 255)
     private String talukaMr;
 
     @Column(nullable = false, length = 32)
@@ -70,10 +65,10 @@ public class Tenant {
     @Column(name = "max_users")
     private Integer maxUsers;
 
-    @Column(name = "contact_email")
+    @Column(name = "contact_email", length = 255)
     private String contactEmail;
 
-    @Column(name = "contact_phone", length = 15)
+    @Column(name = "contact_phone", length = 64)
     private String contactPhone;
 
     @Column(name = "logo_url")
@@ -82,13 +77,13 @@ public class Tenant {
     @Column(name = "image_url")
     private String imageUrl;
 
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "created_at")
     private Instant createdAt;
 
-    @Column(name = "updated_at", nullable = false)
+    @Column(name = "updated_at")
     private Instant updatedAt;
 
-    protected Tenant() {
+    protected ShardTenant() {
     }
 
     public UUID getId() {
@@ -250,7 +245,6 @@ public class Tenant {
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
     }
-
 
     public Instant getCreatedAt() {
         return createdAt;
