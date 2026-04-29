@@ -1,4 +1,4 @@
-package com.asset.smartgrampanchayatapi.controller;
+package com.asset.smartgrampanchayatapi.web;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
