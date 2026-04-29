@@ -6,9 +6,11 @@ import java.util.UUID;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import com.asset.smartgrampanchayatapi.master.jpa.crypto.DistrictDbPasswordAttributeConverter;
 
 @Entity
 @Table(name = "districts")
@@ -50,6 +52,7 @@ public class District {
     private String dbUsername;
 
     @JsonIgnore
+    @Convert(converter = DistrictDbPasswordAttributeConverter.class)
     @Column(name = "db_password", nullable = false, columnDefinition = "text")
     private String dbPassword;
 
