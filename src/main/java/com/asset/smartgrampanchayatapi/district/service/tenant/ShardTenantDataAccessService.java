@@ -1,4 +1,4 @@
-package com.asset.smartgrampanchayatapi.district.service;
+package com.asset.smartgrampanchayatapi.district.service.tenant;
 
 import java.util.Optional;
 
@@ -10,11 +10,11 @@ import com.asset.smartgrampanchayatapi.district.jpa.repository.ShardTenantReposi
 import com.asset.smartgrampanchayatapi.master.jpa.model.District;
 
 @Service
-public class DistrictShardTenantQueryService {
+public class ShardTenantDataAccessService {
 
     private final ShardTenantRepository shardTenantRepository;
 
-    public DistrictShardTenantQueryService(ShardTenantRepository shardTenantRepository) {
+    public ShardTenantDataAccessService(ShardTenantRepository shardTenantRepository) {
         this.shardTenantRepository = shardTenantRepository;
     }
 

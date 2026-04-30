@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.asset.smartgrampanchayatapi.district.jpa.model.ShardTenant;
-import com.asset.smartgrampanchayatapi.district.service.DistrictTenantLookupService;
+import com.asset.smartgrampanchayatapi.district.service.tenant.ShardTenantService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -16,13 +16,13 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
 @RequestMapping("/api/tenants")
-@Tag(name = "Tenants", description = "Tenant lookup APIs")
+@Tag(name = "Tenants", description = "District shard tenant APIs")
 public class TenantController {
 
-    private final DistrictTenantLookupService districtTenantLookupService;
+    private final ShardTenantService shardTenantService;
 
-    public TenantController(DistrictTenantLookupService districtTenantLookupService) {
-        this.districtTenantLookupService = districtTenantLookupService;
+    public TenantController(ShardTenantService shardTenantService) {
+        this.shardTenantService = shardTenantService;
     }
 
     @GetMapping
@@ -47,7 +47,7 @@ public class TenantController {
         if (tenantCode == null || tenantCode.isBlank()) {
             return ResponseEntity.badRequest().build();
         }
-        return districtTenantLookupService
+        return shardTenantService
                 .findByTenantCode(tenantCode.trim())
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
