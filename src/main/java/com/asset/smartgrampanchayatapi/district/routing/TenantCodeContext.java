@@ -1,7 +1,7 @@
 package com.asset.smartgrampanchayatapi.district.routing;
 
 /**
- * Tenant code for the current request, set from the {@code X-Tenant-Code} header by {@link com.asset.smartgrampanchayatapi.web.TenantCodeHeaderFilter}.
+ * Tenant code for the current request, set from the {@code X-Tenant-Code} header by {@link com.asset.smartgrampanchayatapi.web.filter.TenantCodeHeaderFilter}.
  */
 public final class TenantCodeContext {
 
