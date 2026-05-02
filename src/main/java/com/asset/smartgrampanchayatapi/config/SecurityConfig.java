@@ -13,7 +13,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import com.asset.smartgrampanchayatapi.web.TenantCodeHeaderFilter;
+import com.asset.smartgrampanchayatapi.web.filter.TenantCodeHeaderFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -37,7 +37,12 @@ public class SecurityConfig {
                                 "/swagger-resources/**",
                                 "/webjars/**"
                         ).permitAll()
-                        .requestMatchers("/api/test/**", "/api/tenants/**", "/api/citizens/**").permitAll()
+                        .requestMatchers(
+                                "/api/test/**",
+                                "/api/tenants/**",
+                                "/api/citizens/**",
+                                "/api/certificate-types/**"
+                        ).permitAll()
                         .anyRequest().authenticated());
         return http.build();
     }
