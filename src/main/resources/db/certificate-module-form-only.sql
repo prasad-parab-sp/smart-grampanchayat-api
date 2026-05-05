@@ -79,8 +79,11 @@ CREATE TABLE IF NOT EXISTS certificate_type_field (
     certificate_type_id    UUID NOT NULL REFERENCES certificate_type (id) ON DELETE CASCADE,
     field_key              VARCHAR(120) NOT NULL,
     label_mr               VARCHAR(500) NOT NULL,
+    label_en               VARCHAR(500),
     placeholder_mr         VARCHAR(500),
+    placeholder_en         VARCHAR(500),
     help_text_mr           TEXT,
+    help_text_en           TEXT,
     data_type              VARCHAR(32) NOT NULL,
     required               BOOLEAN NOT NULL DEFAULT FALSE,
     sort_order             INTEGER NOT NULL DEFAULT 0,
@@ -94,6 +97,6 @@ CREATE TABLE IF NOT EXISTS certificate_type_field (
     CONSTRAINT uq_cert_type_field_key UNIQUE (certificate_type_id, field_key)
 );
 
-COMMENT ON COLUMN certificate_type_field.options_json IS 'SELECT: [{"value":"X","label_mr":"..."}]';
+COMMENT ON COLUMN certificate_type_field.options_json IS 'SELECT: [{"value":"X","label_mr":"…","label_en":"…"}]';
 
 CREATE INDEX IF NOT EXISTS idx_cert_type_field_type_sort ON certificate_type_field (certificate_type_id, sort_order);
