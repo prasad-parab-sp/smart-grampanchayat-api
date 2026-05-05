@@ -10,10 +10,12 @@ import org.springframework.stereotype.Service;
 
 import com.asset.smartgrampanchayatapi.district.jpa.model.CertificateType;
 import com.asset.smartgrampanchayatapi.district.jpa.model.CertificateTypeCategory;
+import com.asset.smartgrampanchayatapi.district.jpa.model.CertificateTypeField;
 import com.asset.smartgrampanchayatapi.district.jpa.model.TenantCertificateTypeConfig;
 import com.asset.smartgrampanchayatapi.district.routing.TenantCodeContext;
 import com.asset.smartgrampanchayatapi.district.service.routing.TenantShardRoutingService;
 import com.asset.smartgrampanchayatapi.web.dto.CertificateTypeDto;
+import com.asset.smartgrampanchayatapi.web.dto.CertificateTypeFieldDto;
 
 @Service
 public class CertificateTypeService {
@@ -50,11 +52,18 @@ public class CertificateTypeService {
                     List<UUID> ids = types.stream().map(CertificateType::getId).toList();
                     Map<UUID, TenantCertificateTypeConfig> tenantConfigs =
                             certificateTypeDataAccessService.findTenantCertificateTypeConfigs(ctx.tenantId(), ids);
+                    var fieldsByCertType =
+                            certificateTypeDataAccessService.findCertificateTypeFieldsByCertificateTypeIds(ids);
                     List<CertificateTypeDto> items = types.stream()
                             .map(ct -> {
                                 TenantCertificateTypeConfig cfg = tenantConfigs.get(ct.getId());
                                 BigDecimal feeAmount = resolveFeeAmount(ct, cfg);
-                                return CertificateTypeDto.fromCertificateTypeAndTenantConfig(ct, cfg, feeAmount);
+                                List<CertificateTypeFieldDto> extraFields = fieldsByCertType
+                                        .getOrDefault(ct.getId(), List.of()).stream()
+                                        .map(CertificateTypeFieldDto::fromEntity)
+                                        .toList();
+                                return CertificateTypeDto.fromCertificateTypeAndTenantConfig(
+                                        ct, cfg, feeAmount, extraFields);
                             })
                             .toList();
                     return Optional.of(items);

@@ -2,6 +2,7 @@ package com.asset.smartgrampanchayatapi.web.dto;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import com.asset.smartgrampanchayatapi.district.jpa.model.CertificateType;
@@ -39,6 +40,10 @@ public record CertificateTypeDto(
         String icon,
         int sortOrder,
         @Schema(description = "Alias of is_active") boolean active,
+        @Schema(
+                description = "Dynamic inputs for apply form; keys match certificate_application.additional_values_json (except FILE)"
+        )
+        List<CertificateTypeFieldDto> extraFields,
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) Instant createdAt,
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) Instant updatedAt
 ) {
@@ -51,7 +56,8 @@ public record CertificateTypeDto(
     public static CertificateTypeDto fromCertificateTypeAndTenantConfig(
             CertificateType certificateType,
             TenantCertificateTypeConfig tenantCertificateTypeConfig,
-            BigDecimal tenantResolvedFeeAmount
+            BigDecimal tenantResolvedFeeAmount,
+            List<CertificateTypeFieldDto> extraFields
     ) {
         TenantCertificateTypeConfigDto tenantCertificateTypeConfigDto =
                 tenantCertificateTypeConfig != null
@@ -75,6 +81,7 @@ public record CertificateTypeDto(
                 certificateType.getIcon(),
                 certificateType.getSortOrder(),
                 certificateType.isActive(),
+                extraFields == null ? List.of() : List.copyOf(extraFields),
                 certificateType.getCreatedAt(),
                 certificateType.getUpdatedAt()
         );
