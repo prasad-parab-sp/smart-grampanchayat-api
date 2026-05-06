@@ -7,7 +7,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.asset.smartgrampanchayatapi.district.jpa.model.ShardTenant;
 import com.asset.smartgrampanchayatapi.district.jpa.repository.ShardTenantRepository;
-import com.asset.smartgrampanchayatapi.master.jpa.model.District;
 
 @Service
 public class ShardTenantDataAccessService {
@@ -19,7 +18,7 @@ public class ShardTenantDataAccessService {
     }
 
     @Transactional(transactionManager = "districtTransactionManager", readOnly = true)
-    public Optional<ShardTenant> findByTenantCode(District district, String tenantCode) {
+    public Optional<ShardTenant> findByTenantCode(String tenantCode) {
         return shardTenantRepository.findByTenantCode(tenantCode);
     }
 }

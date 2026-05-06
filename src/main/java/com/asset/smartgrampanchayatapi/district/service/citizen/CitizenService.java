@@ -31,7 +31,7 @@ public class CitizenService {
         return tenantShardRoutingService.runOnShard(
                 TenantCodeContext.getRequired(),
                 "Could not load citizen from district database",
-                ctx -> citizenDataAccessService.findByIdAndTenantId(ctx.district(), id, ctx.tenantId())
+                ctx -> citizenDataAccessService.findByIdAndTenantId(id, ctx.tenantId())
         );
     }
 
@@ -44,7 +44,7 @@ public class CitizenService {
             return tenantShardRoutingService.runOnShard(
                     code,
                     "Could not load citizen from district database",
-                    ctx -> citizenDataAccessService.findByTenantIdAndMobile(ctx.district(), ctx.tenantId(), mobile.trim())
+                    ctx -> citizenDataAccessService.findByTenantIdAndMobile(ctx.tenantId(), mobile.trim())
             );
         }
         if (email != null && !email.isBlank()) {
@@ -52,7 +52,7 @@ public class CitizenService {
                     code,
                     "Could not load citizen from district database",
                     ctx -> citizenDataAccessService.findByTenantIdAndEmailIgnoreCase(
-                            ctx.district(), ctx.tenantId(), email.trim())
+                            ctx.tenantId(), email.trim())
             );
         }
         return Optional.empty();
@@ -63,7 +63,7 @@ public class CitizenService {
         return tenantShardRoutingService.runOnShard(
                 tenantCode,
                 "Could not load citizen from district database",
-                ctx -> citizenDataAccessService.findByTenantIdAndMobile(ctx.district(), ctx.tenantId(), mobile.trim())
+                ctx -> citizenDataAccessService.findByTenantIdAndMobile(ctx.tenantId(), mobile.trim())
         );
     }
 
@@ -72,7 +72,7 @@ public class CitizenService {
                 tenantCode,
                 "Could not load citizen from district database",
                 ctx -> citizenDataAccessService.findByTenantIdAndEmailIgnoreCase(
-                        ctx.district(), ctx.tenantId(), email.trim())
+                        ctx.tenantId(), email.trim())
         );
     }
 
@@ -80,7 +80,7 @@ public class CitizenService {
         return tenantShardRoutingService.runOnShard(
                 tenantCode,
                 "Could not load citizen from district database",
-                ctx -> citizenDataAccessService.findByIdAndTenantId(ctx.district(), id, ctx.tenantId())
+                ctx -> citizenDataAccessService.findByIdAndTenantId(id, ctx.tenantId())
         );
     }
 }

@@ -5,9 +5,9 @@ package com.asset.smartgrampanchayatapi.district.jpa.model;
  * Constant names must match database labels exactly.
  */
 public enum UserRole {
-    gp_admin,
-    operator,
-    viewer,
-    sarpanch,
-    gramsevak
+    SARPANCH,
+    GRAMSEVAK,
+    GP_ADMIN,
+    OPERATOR,
+    VIEWER
 }

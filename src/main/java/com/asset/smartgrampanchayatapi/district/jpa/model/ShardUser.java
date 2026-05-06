@@ -29,9 +29,6 @@ public class ShardUser {
     @Column(name = "tenant_id", nullable = false)
     private UUID tenantId;
 
-    @Column(name = "grampanchayat_id")
-    private UUID grampanchayatId;
-
     @Column(nullable = false, length = 255)
     private String email;
 
@@ -60,15 +57,6 @@ public class ShardUser {
     @Column(name = "password_changed_at")
     private Instant passwordChangedAt;
 
-    @Column(name = "created_at", nullable = false)
-    private Instant createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
-
-    @Column(name = "deleted_at")
-    private Instant deletedAt;
-
     protected ShardUser() {
     }
 
@@ -86,14 +74,6 @@ public class ShardUser {
 
     public void setTenantId(UUID tenantId) {
         this.tenantId = tenantId;
-    }
-
-    public UUID getGrampanchayatId() {
-        return grampanchayatId;
-    }
-
-    public void setGrampanchayatId(UUID grampanchayatId) {
-        this.grampanchayatId = grampanchayatId;
     }
 
     public String getEmail() {
@@ -166,29 +146,5 @@ public class ShardUser {
 
     public void setPasswordChangedAt(Instant passwordChangedAt) {
         this.passwordChangedAt = passwordChangedAt;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public Instant getDeletedAt() {
-        return deletedAt;
-    }
-
-    public void setDeletedAt(Instant deletedAt) {
-        this.deletedAt = deletedAt;
     }
 }
