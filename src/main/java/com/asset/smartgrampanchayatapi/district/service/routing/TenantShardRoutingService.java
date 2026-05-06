@@ -42,9 +42,18 @@ public class TenantShardRoutingService {
     }
 
     /**
+     * Binds the district shard for {@code tenantCode}, runs the callback, then clears routing.
+     * <p>
+     * Callback returns {@link Optional}: use it directly for lookups (e.g. repository {@code find}), or wrap a plain
+     * value with {@link Optional#of(Object)} (e.g. {@code ctx -> Optional.of(service.save(...))}).
+     * When {@code tenantCode} does not resolve on the master DB, the result is {@link Optional#empty()} without
+     * invoking the callback.
+     * </p>
+     * <p>
      * Must bind routing before {@code @Transactional} runs on shard services: the transaction opens JDBC before the
      * proxied method body executes; {@link com.asset.smartgrampanchayatapi.district.routing.DistrictRoutingDataSource}
      * needs the holder set first.
+     * </p>
      */
     public <T> Optional<T> runOnShard(
             String tenantCode,

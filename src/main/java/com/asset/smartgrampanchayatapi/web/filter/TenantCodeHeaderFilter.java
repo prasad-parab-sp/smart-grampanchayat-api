@@ -2,11 +2,14 @@ package com.asset.smartgrampanchayatapi.web.filter;
 
 import java.io.IOException;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.lang.NonNull;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.asset.smartgrampanchayatapi.district.routing.TenantCodeContext;
+import com.asset.smartgrampanchayatapi.web.dto.ApiErrorResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -23,6 +26,12 @@ public class TenantCodeHeaderFilter extends OncePerRequestFilter {
 
     private static final String TENANTS_PATH = "/api/tenants";
     private static final String PARAM_TENANT_CODE = "tenantCode";
+
+    private final ObjectMapper objectMapper;
+
+    public TenantCodeHeaderFilter(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
 
     @Override
     protected void doFilterInternal(
@@ -48,7 +57,7 @@ public class TenantCodeHeaderFilter extends OncePerRequestFilter {
 
         String raw = request.getHeader(HEADER_TENANT_CODE);
         if (raw == null || raw.isBlank()) {
-            sendMissingHeader(response);
+            sendMissingHeader(response, request);
             return;
         }
 
@@ -71,12 +80,16 @@ public class TenantCodeHeaderFilter extends OncePerRequestFilter {
         return p != null && !p.isBlank();
     }
 
-    private static void sendMissingHeader(HttpServletResponse response) throws IOException {
+    private void sendMissingHeader(HttpServletResponse response, HttpServletRequest request) throws IOException {
+        ApiErrorResponse body = ApiErrorResponse.of(
+                request,
+                HttpStatus.BAD_REQUEST,
+                "MISSING_TENANT_HEADER",
+                "Required header '" + HEADER_TENANT_CODE + "' is missing or blank."
+        );
         response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
         response.setCharacterEncoding("UTF-8");
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.getWriter().write(
-                "{\"error\":\"Required header missing\",\"header\":\"" + HEADER_TENANT_CODE + "\"}"
-        );
+        objectMapper.writeValue(response.getOutputStream(), body);
     }
 }

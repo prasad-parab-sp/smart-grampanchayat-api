@@ -1,6 +1,7 @@
 package com.asset.smartgrampanchayatapi.district.jpa.repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -46,4 +47,26 @@ public interface CertificateTypeRepository extends JpaRepository<CertificateType
             @Param("tenantId") UUID tenantId,
             @Param("category") CertificateTypeCategory category
     );
+
+    /**
+     * Same visibility rules as {@link #findVisibleCertificateTypesForTenant} but for a single catalog id.
+     */
+    @Query(
+            """
+                    select ct from CertificateType ct
+                    where ct.id = :id
+                      and ct.isActive = true
+                      and (ct.tenantId is null or ct.tenantId = :tenantId)
+                      and (
+                          ct.tenantId is not null
+                          or not exists (
+                              select 1 from TenantCertificateTypeConfig tcc
+                              where tcc.certificateType = ct
+                                and tcc.tenantId = :tenantId
+                                and tcc.enabled = false
+                          )
+                      )
+                    """
+    )
+    Optional<CertificateType> findVisibleByIdForTenant(@Param("id") UUID id, @Param("tenantId") UUID tenantId);
 }
