@@ -31,7 +31,7 @@ public class ShardTenantService {
         return tenantShardRoutingService.runOnShard(
                 tenantCode,
                 "Could not load tenant from district database",
-                ctx -> shardTenantDataAccessService.findByTenantCode(ctx.district(), ctx.tenantCode())
+                ctx -> shardTenantDataAccessService.findByTenantCode(ctx.tenantCode())
         );
     }
 }
