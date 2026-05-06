@@ -1,10 +1,12 @@
 package com.asset.smartgrampanchayatapi.web.controller;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.asset.smartgrampanchayatapi.district.jpa.model.ShardTenant;
 import com.asset.smartgrampanchayatapi.district.service.tenant.ShardTenantService;
@@ -45,11 +47,14 @@ public class TenantController {
             @RequestParam("tenantCode") String tenantCode
     ) {
         if (tenantCode == null || tenantCode.isBlank()) {
-            return ResponseEntity.badRequest().build();
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Query parameter 'tenantCode' is required.");
         }
         return shardTenantService
                 .findByTenantCode(tenantCode.trim())
                 .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "No tenant found for the given tenantCode."
+                ));
     }
 }

@@ -1,7 +1,7 @@
 -- =============================================================================
 -- Certificate / दाखले module — district shard (PostgreSQL)
 -- Run against each district shard database after core tables exist:
---   tenants (UUID id), citizens (UUID id, optional FK for citizen_id).
+--   tenants (UUID id), citizens (UUID id); certificate_application.citizen_id is NOT NULL FK.
 -- Requires: PostgreSQL 13+ (gen_random_uuid). For PG14-, enable pgcrypto
 --           or replace gen_random_uuid() with uuid_generate_v4() + uuid extension.
 -- =============================================================================
@@ -145,7 +145,8 @@ CREATE TABLE IF NOT EXISTS certificate_application (
     tenant_id                 UUID NOT NULL REFERENCES tenants (id),
     certificate_type_id       UUID NOT NULL REFERENCES certificate_type (id),
     application_number        VARCHAR(40) NOT NULL,
-    -- human-readable: e.g. GP/2026/0042
+    -- human-readable: X-Tenant-Code (uppercase) / IST submission year / sequence (not gp_code).
+    -- Sequence is monotonic per tenant (1 + all-time count); year segment does not reset the sequence.
     applicant_full_name     VARCHAR(300) NOT NULL,
     applicant_mobile        VARCHAR(15) NOT NULL,
     reason_short            VARCHAR(200),
@@ -155,19 +156,14 @@ CREATE TABLE IF NOT EXISTS certificate_application (
     for_whom_name             VARCHAR(300),
     -- subject of certificate (“कोणाच्या नावाचा दाखला”)
 
-    citizen_id                UUID REFERENCES citizens (id),
+    citizen_id                UUID NOT NULL REFERENCES citizens (id),
     status                    VARCHAR(32) NOT NULL DEFAULT 'SUBMITTED',
     submitted_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at                TIMESTAMPTZ NOT NULL DEFAULT now(),
-    fee_amount_snapshot       NUMERIC(12, 2) NOT NULL DEFAULT 0,
-    fee_was_default_snapshot  BOOLEAN NOT NULL DEFAULT TRUE,
-    -- FALSE if tenant_certificate_type_config set fee at submit time
 
     paid_at                   TIMESTAMPTZ,
     payment_reference         VARCHAR(120),
 
     additional_values_json    JSONB NOT NULL DEFAULT '{}',
-    template_revision_snapshot INTEGER,
 
     CONSTRAINT ck_certificate_application_status CHECK (
         status IN (
@@ -178,7 +174,7 @@ CREATE TABLE IF NOT EXISTS certificate_application (
 );
 
 COMMENT ON TABLE certificate_application IS 'One row per request; structured extras in additional_values_json; files in certificate_application_file.';
-COMMENT ON COLUMN certificate_application.additional_values_json IS 'Keyed by certificate_type_field.field_key; excludes FILE keys (stored as files table).';
+COMMENT ON COLUMN certificate_application.additional_values_json IS 'Keyed by certificate_type_field.field_key.';
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_cert_app_number_tenant
     ON certificate_application (tenant_id, application_number);

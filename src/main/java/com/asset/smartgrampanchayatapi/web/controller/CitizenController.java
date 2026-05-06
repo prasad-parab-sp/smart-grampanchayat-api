@@ -2,12 +2,14 @@ package com.asset.smartgrampanchayatapi.web.controller;
 
 import java.util.UUID;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.asset.smartgrampanchayatapi.district.jpa.model.Citizen;
 import com.asset.smartgrampanchayatapi.district.service.citizen.CitizenService;
@@ -50,7 +52,10 @@ public class CitizenController {
         return citizenService
                 .findById(id)
                 .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Citizen not found for this tenant."
+                ));
     }
 
     @GetMapping
@@ -80,11 +85,14 @@ public class CitizenController {
         boolean hasMobile = mobile != null && !mobile.isBlank();
         boolean hasEmail = email != null && !email.isBlank();
         if (hasMobile == hasEmail) {
-            return ResponseEntity.badRequest().build();
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Provide exactly one of query parameters 'mobile' or 'email'."
+            );
         }
         return citizenService
                 .findByMobileOrEmail(mobile, email)
                 .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Citizen not found."));
     }
 }
