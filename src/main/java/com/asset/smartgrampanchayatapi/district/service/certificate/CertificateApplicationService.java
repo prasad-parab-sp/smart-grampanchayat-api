@@ -17,21 +17,25 @@ import com.asset.smartgrampanchayatapi.district.service.user.UserService;
 import com.asset.smartgrampanchayatapi.web.dto.CertificateApplicationApproveRequest;
 import com.asset.smartgrampanchayatapi.web.dto.CertificateApplicationDto;
 import com.asset.smartgrampanchayatapi.web.dto.CertificateApplicationSubmitRequest;
+import com.asset.smartgrampanchayatapi.web.dto.CertificateIssuedDocumentDto;
 
 @Service
 public class CertificateApplicationService {
 
     private final TenantShardRoutingService tenantShardRoutingService;
     private final CertificateApplicationDataAccessService certificateApplicationDataAccessService;
+    private final CertificateIssuanceService certificateIssuanceService;
     private final UserService userService;
 
     public CertificateApplicationService(
             TenantShardRoutingService tenantShardRoutingService,
             CertificateApplicationDataAccessService certificateApplicationDataAccessService,
+            CertificateIssuanceService certificateIssuanceService,
             UserService userService
     ) {
         this.tenantShardRoutingService = tenantShardRoutingService;
         this.certificateApplicationDataAccessService = certificateApplicationDataAccessService;
+        this.certificateIssuanceService = certificateIssuanceService;
         this.userService = userService;
     }
 
@@ -114,6 +118,25 @@ public class CertificateApplicationService {
                                 applicationId,
                                 staff.getId()
                         ))
+                )
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Unknown tenant: no master DB row for tenant_code matching X-Tenant-Code: " + tenantCode
+                                + ". Use GET /api/tenants?tenantCode=... to verify, or insert tenants on master."
+                ));
+    }
+
+    /**
+     * Citizen-only: returns frozen or freshly-built printable HTML for an {@link com.asset.smartgrampanchayatapi.district.jpa.model.CertificateApplicationStatus#APPROVED}
+     * application when {@code citizenId} matches the row.
+     */
+    public CertificateIssuedDocumentDto getIssuedDocument(UUID applicationId, UUID citizenId, String lang) {
+        String tenantCode = TenantCodeContext.getRequired();
+        return tenantShardRoutingService
+                .runOnShard(
+                        tenantCode,
+                        "Could not load issued certificate",
+                        ctx -> Optional.of(certificateIssuanceService.loadOrBuildIssuedDocument(ctx, applicationId, citizenId, lang))
                 )
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
