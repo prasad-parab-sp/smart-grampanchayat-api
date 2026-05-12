@@ -70,6 +70,12 @@ public class CertificateApplication {
     @Column(name = "additional_values_json", nullable = false, columnDefinition = "jsonb")
     private JsonNode additionalValuesJson;
 
+    @Column(name = "approved_at")
+    private Instant approvedAt;
+
+    @Column(name = "approved_by_user_id")
+    private UUID approvedByUserId;
+
     public CertificateApplication() {
     }
 
@@ -199,5 +205,21 @@ public class CertificateApplication {
 
     public void setAdditionalValuesJson(JsonNode additionalValuesJson) {
         this.additionalValuesJson = additionalValuesJson;
+    }
+
+    public Instant getApprovedAt() {
+        return approvedAt;
+    }
+
+    public void setApprovedAt(Instant approvedAt) {
+        this.approvedAt = approvedAt;
+    }
+
+    public UUID getApprovedByUserId() {
+        return approvedByUserId;
+    }
+
+    public void setApprovedByUserId(UUID approvedByUserId) {
+        this.approvedByUserId = approvedByUserId;
     }
 }

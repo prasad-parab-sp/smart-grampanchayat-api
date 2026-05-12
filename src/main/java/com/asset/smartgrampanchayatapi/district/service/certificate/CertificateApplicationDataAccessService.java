@@ -81,6 +81,31 @@ public class CertificateApplicationDataAccessService {
         return CertificateApplicationDto.fromEntity(app, objectMapper);
     }
 
+    @Transactional(transactionManager = "districtTransactionManager")
+    public CertificateApplicationDto approveApplication(UUID tenantId, UUID applicationId, UUID approverUserId) {
+        CertificateApplication app = certificateApplicationRepository
+                .findByIdAndTenantId(applicationId, tenantId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Certificate application not found for this tenant."
+                ));
+        if (app.getStatus() == CertificateApplicationStatus.APPROVED) {
+            return CertificateApplicationDto.fromEntity(app, objectMapper);
+        }
+        if (app.getStatus() != CertificateApplicationStatus.SUBMITTED
+                && app.getStatus() != CertificateApplicationStatus.PENDING_REVIEW) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Application cannot be approved from status " + app.getStatus()
+            );
+        }
+        app.setStatus(CertificateApplicationStatus.APPROVED);
+        app.setApprovedAt(Instant.now());
+        app.setApprovedByUserId(approverUserId);
+        certificateApplicationRepository.save(app);
+        return CertificateApplicationDto.fromEntity(app, objectMapper);
+    }
+
     @Transactional(transactionManager = "districtTransactionManager", readOnly = true)
     public Optional<CertificateApplicationDto> findByIdForTenant(UUID applicationId, UUID tenantId) {
         Optional<CertificateApplication> app = certificateApplicationRepository.findByIdAndTenantId(applicationId, tenantId);

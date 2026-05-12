@@ -89,6 +89,32 @@ public class UserService {
     }
 
     /**
+     * Verifies active user credentials on the current tenant shard without updating {@code last_login_at}.
+     * Used for sensitive actions (e.g. certificate approval) until a proper staff session/JWT exists.
+     */
+    public Optional<ShardUser> verifyActiveUserCredentials(String identifier, String password) {
+        String value = identifier == null ? "" : identifier.trim();
+        if (value.isBlank()) {
+            return Optional.empty();
+        }
+        String normalizedPassword = password == null ? "" : password;
+        Optional<ShardUser> user = value.contains("@")
+                ? findByMobileOrEmail(null, value)
+                : findByMobileOrEmail(value, null);
+        if (user.isEmpty()) {
+            return Optional.empty();
+        }
+        ShardUser matched = user.get();
+        if (!matched.isActive()) {
+            throw new ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN, "User is inactive.");
+        }
+        if (!isPasswordMatch(normalizedPassword, matched.getPasswordHash())) {
+            return Optional.empty();
+        }
+        return Optional.of(matched);
+    }
+
+    /**
      * Sets or clears temporary role elevation for a user in the current tenant shard.
      * Clears when {@code elevatedRole}, {@code actingFrom}, and {@code actingUntil} are all null.
      */

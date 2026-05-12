@@ -16,6 +16,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.asset.smartgrampanchayatapi.district.jpa.model.CertificateApplicationStatus;
 import com.asset.smartgrampanchayatapi.district.service.certificate.CertificateApplicationService;
+import com.asset.smartgrampanchayatapi.web.dto.CertificateApplicationApproveRequest;
 import com.asset.smartgrampanchayatapi.web.dto.CertificateApplicationDto;
 import com.asset.smartgrampanchayatapi.web.dto.CertificateApplicationSubmitRequest;
 import com.asset.smartgrampanchayatapi.web.filter.TenantCodeHeaderFilter;
@@ -123,5 +124,33 @@ public class CertificateApplicationController {
                         HttpStatus.NOT_FOUND,
                         "Certificate application not found for this tenant."
                 ));
+    }
+
+    @PostMapping("/{id}/approve")
+    @Operation(
+            summary = "Approve certificate application (Gramsevak only)",
+            description = "Verifies staff credentials on the district shard. Only users with stored role GRAMSEVAK may approve. "
+                    + "Allowed from SUBMITTED or PENDING_REVIEW. Idempotent if already APPROVED."
+    )
+    @Parameter(
+            name = TenantCodeHeaderFilter.HEADER_TENANT_CODE,
+            in = ParameterIn.HEADER,
+            required = true,
+            example = "GP001"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            content = @Content(schema = @Schema(implementation = CertificateApplicationDto.class))
+    )
+    @ApiResponse(responseCode = "401", description = "Invalid credentials", content = @Content)
+    @ApiResponse(responseCode = "403", description = "User inactive or not Gramsevak", content = @Content)
+    @ApiResponse(responseCode = "404", description = "Unknown tenant or application not found", content = @Content)
+    @ApiResponse(responseCode = "409", description = "Application not in an approvable status", content = @Content)
+    @ApiResponse(responseCode = "503", description = "District database unavailable", content = @Content)
+    public ResponseEntity<CertificateApplicationDto> approve(
+            @PathVariable("id") UUID id,
+            @Valid @RequestBody CertificateApplicationApproveRequest body
+    ) {
+        return ResponseEntity.ok(certificateApplicationService.approve(id, body));
     }
 }
