@@ -19,6 +19,7 @@ import com.asset.smartgrampanchayatapi.district.service.certificate.CertificateA
 import com.asset.smartgrampanchayatapi.web.dto.CertificateApplicationApproveRequest;
 import com.asset.smartgrampanchayatapi.web.dto.CertificateApplicationDto;
 import com.asset.smartgrampanchayatapi.web.dto.CertificateApplicationSubmitRequest;
+import com.asset.smartgrampanchayatapi.web.dto.CertificateIssuedDocumentDto;
 import com.asset.smartgrampanchayatapi.web.filter.TenantCodeHeaderFilter;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -124,6 +125,36 @@ public class CertificateApplicationController {
                         HttpStatus.NOT_FOUND,
                         "Certificate application not found for this tenant."
                 ));
+    }
+
+    @GetMapping("/{id}/issued-document")
+    @Operation(
+            summary = "Get printable HTML certificate (citizen)",
+            description = "Requires query citizenId to match the application owner. Only when status is APPROVED. "
+                    + "HTML is generated once from the active document format and then cached on the application row."
+    )
+    @Parameter(
+            name = TenantCodeHeaderFilter.HEADER_TENANT_CODE,
+            in = ParameterIn.HEADER,
+            required = true,
+            example = "GP001"
+    )
+    @Parameter(name = "citizenId", in = ParameterIn.QUERY, required = true, description = "Must equal application.citizenId")
+    @Parameter(name = "lang", in = ParameterIn.QUERY, description = "mr (default) or en")
+    @ApiResponse(
+            responseCode = "200",
+            content = @Content(schema = @Schema(implementation = CertificateIssuedDocumentDto.class))
+    )
+    @ApiResponse(responseCode = "403", description = "citizenId does not own this application", content = @Content)
+    @ApiResponse(responseCode = "404", description = "Application, tenant, or active format not found", content = @Content)
+    @ApiResponse(responseCode = "409", description = "Application not approved", content = @Content)
+    @ApiResponse(responseCode = "503", description = "District database unavailable", content = @Content)
+    public ResponseEntity<CertificateIssuedDocumentDto> getIssuedDocument(
+            @PathVariable("id") UUID id,
+            @RequestParam("citizenId") UUID citizenId,
+            @RequestParam(value = "lang", required = false) String lang
+    ) {
+        return ResponseEntity.ok(certificateApplicationService.getIssuedDocument(id, citizenId, lang));
     }
 
     @PostMapping("/{id}/approve")

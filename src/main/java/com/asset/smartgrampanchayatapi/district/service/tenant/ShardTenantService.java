@@ -4,12 +4,7 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
-import com.asset.smartgrampanchayatapi.district.jpa.model.Grampanchayat;
 import com.asset.smartgrampanchayatapi.district.jpa.model.ShardTenant;
-import com.asset.smartgrampanchayatapi.district.jpa.model.ShardUser;
-import com.asset.smartgrampanchayatapi.district.jpa.model.UserRole;
-import com.asset.smartgrampanchayatapi.district.jpa.repository.GrampanchayatRepository;
-import com.asset.smartgrampanchayatapi.district.jpa.repository.ShardUserRepository;
 import com.asset.smartgrampanchayatapi.district.service.routing.TenantShardRoutingService;
 import com.asset.smartgrampanchayatapi.web.dto.TenantProfileDto;
 
@@ -21,19 +16,16 @@ public class ShardTenantService {
 
     private final TenantShardRoutingService tenantShardRoutingService;
     private final ShardTenantDataAccessService shardTenantDataAccessService;
-    private final GrampanchayatRepository grampanchayatRepository;
-    private final ShardUserRepository shardUserRepository;
+    private final DistrictOfficerNameService districtOfficerNameService;
 
     public ShardTenantService(
             TenantShardRoutingService tenantShardRoutingService,
             ShardTenantDataAccessService shardTenantDataAccessService,
-            GrampanchayatRepository grampanchayatRepository,
-            ShardUserRepository shardUserRepository
+            DistrictOfficerNameService districtOfficerNameService
     ) {
         this.tenantShardRoutingService = tenantShardRoutingService;
         this.shardTenantDataAccessService = shardTenantDataAccessService;
-        this.grampanchayatRepository = grampanchayatRepository;
-        this.shardUserRepository = shardUserRepository;
+        this.districtOfficerNameService = districtOfficerNameService;
     }
 
     /**
@@ -57,23 +49,14 @@ public class ShardTenantService {
                 ctx -> shardTenantDataAccessService
                         .findByTenantCode(ctx.tenantCode())
                         .map(t -> {
-                            String sarpanchDisplay = shardUserRepository
-                                    .findByTenantIdAndRoleAndActiveTrue(t.getId(), UserRole.SARPANCH)
-                                    .map(ShardTenantService::displayNameFromUser)
+                            String sarpanchDisplay = districtOfficerNameService
+                                    .resolveSarpanchDisplayName(t.getId())
                                     .orElse(null);
-                            String gramsevakDisplay = grampanchayatRepository
-                                    .findByTenantId(t.getId())
-                                    .map(Grampanchayat::getGramsevakName)
+                            String gramsevakDisplay = districtOfficerNameService
+                                    .resolveGramsevakDisplayName(t.getId())
                                     .orElse(null);
                             return TenantProfileDto.fromParts(t, sarpanchDisplay, gramsevakDisplay);
                         })
         );
-    }
-
-    private static String displayNameFromUser(ShardUser u) {
-        String f = u.getFirstName() != null ? u.getFirstName().trim() : "";
-        String l = u.getLastName() != null ? u.getLastName().trim() : "";
-        String joined = (f + " " + l).trim();
-        return joined.isEmpty() ? null : joined;
     }
 }

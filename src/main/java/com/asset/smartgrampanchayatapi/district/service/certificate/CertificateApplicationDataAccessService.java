@@ -33,15 +33,18 @@ public class CertificateApplicationDataAccessService {
 
     private final CertificateApplicationRepository certificateApplicationRepository;
     private final CertificateTypeRepository certificateTypeRepository;
+    private final CertificateIssuanceService certificateIssuanceService;
     private final ObjectMapper objectMapper;
 
     public CertificateApplicationDataAccessService(
             CertificateApplicationRepository certificateApplicationRepository,
             CertificateTypeRepository certificateTypeRepository,
+            CertificateIssuanceService certificateIssuanceService,
             ObjectMapper objectMapper
     ) {
         this.certificateApplicationRepository = certificateApplicationRepository;
         this.certificateTypeRepository = certificateTypeRepository;
+        this.certificateIssuanceService = certificateIssuanceService;
         this.objectMapper = objectMapper;
     }
 
@@ -103,6 +106,7 @@ public class CertificateApplicationDataAccessService {
         app.setApprovedAt(Instant.now());
         app.setApprovedByUserId(approverUserId);
         certificateApplicationRepository.save(app);
+        certificateIssuanceService.buildAndPersistIssuedHtmlAfterApproval(tenantId, applicationId);
         return CertificateApplicationDto.fromEntity(app, objectMapper);
     }
 

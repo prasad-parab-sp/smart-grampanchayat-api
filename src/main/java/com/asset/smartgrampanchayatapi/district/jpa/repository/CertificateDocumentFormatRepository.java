@@ -13,4 +13,9 @@ public interface CertificateDocumentFormatRepository extends JpaRepository<Certi
     List<CertificateDocumentFormat> findByTenantIdOrderByUpdatedAtDesc(UUID tenantId);
 
     Optional<CertificateDocumentFormat> findByIdAndTenantId(UUID id, UUID tenantId);
+
+    Optional<CertificateDocumentFormat> findFirstByTenantIdAndCertificateTypeIdAndActiveTrueOrderByUpdatedAtDesc(
+            UUID tenantId,
+            UUID certificateTypeId
+    );
 }

@@ -76,6 +76,9 @@ public class CertificateApplication {
     @Column(name = "approved_by_user_id")
     private UUID approvedByUserId;
 
+    @Column(name = "issued_document_html", columnDefinition = "text")
+    private String issuedDocumentHtml;
+
     public CertificateApplication() {
     }
 
@@ -221,5 +224,13 @@ public class CertificateApplication {
 
     public void setApprovedByUserId(UUID approvedByUserId) {
         this.approvedByUserId = approvedByUserId;
+    }
+
+    public String getIssuedDocumentHtml() {
+        return issuedDocumentHtml;
+    }
+
+    public void setIssuedDocumentHtml(String issuedDocumentHtml) {
+        this.issuedDocumentHtml = issuedDocumentHtml;
     }
 }
