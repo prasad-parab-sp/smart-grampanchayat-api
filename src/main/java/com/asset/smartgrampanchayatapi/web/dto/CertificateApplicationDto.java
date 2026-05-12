@@ -29,6 +29,8 @@ public record CertificateApplicationDto(
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) Instant submittedAt,
         Instant paidAt,
         String paymentReference,
+        Instant approvedAt,
+        UUID approvedByUserId,
         @Schema(description = "Keyed by certificate_type_field.field_key (JSON object from DB via ObjectMapper)")
         Map<String, Object> additionalValues
 ) {
@@ -50,6 +52,8 @@ public record CertificateApplicationDto(
                 e.getSubmittedAt(),
                 e.getPaidAt(),
                 e.getPaymentReference(),
+                e.getApprovedAt(),
+                e.getApprovedByUserId(),
                 values
         );
     }
