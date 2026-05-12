@@ -3,12 +3,15 @@ package com.asset.smartgrampanchayatapi.district.service.user;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.asset.smartgrampanchayatapi.district.jpa.model.ShardUser;
+import com.asset.smartgrampanchayatapi.district.jpa.model.UserRole;
 import com.asset.smartgrampanchayatapi.district.routing.TenantCodeContext;
 import com.asset.smartgrampanchayatapi.district.service.routing.TenantShardRoutingService;
 
@@ -83,6 +86,43 @@ public class UserService {
                 }
         );
         return Optional.of(matched);
+    }
+
+    /**
+     * Sets or clears temporary role elevation for a user in the current tenant shard.
+     * Clears when {@code elevatedRole}, {@code actingFrom}, and {@code actingUntil} are all null.
+     */
+    public ShardUser patchElevation(UUID userId, UserRole elevatedRole, Instant actingFrom, Instant actingUntil) {
+        boolean allNull = elevatedRole == null && actingFrom == null && actingUntil == null;
+        boolean allSet = elevatedRole != null && actingFrom != null && actingUntil != null;
+        if (!allNull && !allSet) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Provide all of elevatedRole, actingFrom, actingUntil, or omit all three to clear elevation."
+            );
+        }
+        if (allSet && !actingFrom.isBefore(actingUntil)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "actingFrom must be before actingUntil.");
+        }
+        return tenantShardRoutingService.runOnShard(
+                TenantCodeContext.getRequired(),
+                "Could not update user elevation in district database",
+                ctx -> {
+                    ShardUser user = userDataAccessService
+                            .findByTenantIdAndId(ctx.tenantId(), userId)
+                            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found."));
+                    if (allNull) {
+                        user.setElevatedRole(null);
+                        user.setActingFrom(null);
+                        user.setActingUntil(null);
+                    } else {
+                        user.setElevatedRole(elevatedRole);
+                        user.setActingFrom(actingFrom);
+                        user.setActingUntil(actingUntil);
+                    }
+                    return Optional.of(userDataAccessService.save(user));
+                }
+        ).orElseThrow(() -> new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "District database unavailable."));
     }
 
     private boolean isPasswordMatch(String rawPassword, String storedHash) {

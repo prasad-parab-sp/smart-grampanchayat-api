@@ -34,6 +34,11 @@ public class UserDataAccessService {
         return shardUserRepository.findAllByTenantId(tenantId);
     }
 
+    @Transactional(transactionManager = "districtTransactionManager", readOnly = true)
+    public Optional<ShardUser> findByTenantIdAndId(UUID tenantId, UUID id) {
+        return shardUserRepository.findByTenantIdAndId(tenantId, id);
+    }
+
     @Transactional(transactionManager = "districtTransactionManager")
     public ShardUser save(ShardUser user) {
         return shardUserRepository.save(user);

@@ -8,8 +8,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.asset.smartgrampanchayatapi.district.jpa.model.ShardTenant;
 import com.asset.smartgrampanchayatapi.district.service.tenant.ShardTenantService;
+import com.asset.smartgrampanchayatapi.web.dto.TenantProfileDto;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -43,14 +43,14 @@ public class TenantController {
             description = "District database unavailable",
             content = @Content
     )
-    public ResponseEntity<ShardTenant> getTenant(
+    public ResponseEntity<TenantProfileDto> getTenant(
             @RequestParam("tenantCode") String tenantCode
     ) {
         if (tenantCode == null || tenantCode.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Query parameter 'tenantCode' is required.");
         }
         return shardTenantService
-                .findByTenantCode(tenantCode.trim())
+                .findProfileByTenantCode(tenantCode.trim())
                 .map(ResponseEntity::ok)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,

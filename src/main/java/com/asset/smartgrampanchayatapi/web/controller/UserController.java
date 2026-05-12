@@ -1,10 +1,13 @@
 package com.asset.smartgrampanchayatapi.web.controller;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,6 +17,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.asset.smartgrampanchayatapi.district.service.user.UserService;
 import com.asset.smartgrampanchayatapi.web.dto.UserDto;
+import com.asset.smartgrampanchayatapi.web.dto.UserElevationPatchRequest;
 import com.asset.smartgrampanchayatapi.web.dto.UserLoginRequest;
 import com.asset.smartgrampanchayatapi.web.dto.UserLoginResponse;
 import com.asset.smartgrampanchayatapi.web.filter.TenantCodeHeaderFilter;
@@ -113,5 +117,20 @@ public class UserController {
                 .map(UserDto::fromEntity)
                 .map(ResponseEntity::ok)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found."));
+    }
+
+    @PatchMapping("/{id}/elevation")
+    @Operation(summary = "Set or clear temporary role elevation for a user (MVP; secured later)")
+    @Parameter(name = TenantCodeHeaderFilter.HEADER_TENANT_CODE, in = ParameterIn.HEADER, required = true, example = "GP001")
+    @ApiResponse(responseCode = "200", description = "Updated user", content = @Content(schema = @Schema(implementation = UserDto.class)))
+    @ApiResponse(responseCode = "400", description = "Invalid elevation payload", content = @Content)
+    @ApiResponse(responseCode = "404", description = "User not found", content = @Content)
+    @ApiResponse(responseCode = "503", description = "District database unavailable", content = @Content)
+    public ResponseEntity<UserDto> patchElevation(
+            @PathVariable("id") UUID id,
+            @RequestBody UserElevationPatchRequest body
+    ) {
+        var updated = userService.patchElevation(id, body.elevatedRole(), body.actingFrom(), body.actingUntil());
+        return ResponseEntity.ok(UserDto.fromEntity(updated));
     }
 }

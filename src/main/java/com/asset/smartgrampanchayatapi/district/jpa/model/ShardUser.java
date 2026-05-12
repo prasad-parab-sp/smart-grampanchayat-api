@@ -57,7 +57,32 @@ public class ShardUser {
     @Column(name = "password_changed_at")
     private Instant passwordChangedAt;
 
+    /** When set with acting_from / acting_until in range, {@link #effectiveRoleAt} returns this instead of {@link #role}. */
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "elevated_role", columnDefinition = "user_role")
+    private UserRole elevatedRole;
+
+    @Column(name = "acting_from")
+    private Instant actingFrom;
+
+    @Column(name = "acting_until")
+    private Instant actingUntil;
+
     protected ShardUser() {
+    }
+
+    /**
+     * Role used for authorization / UI: {@link #elevatedRole} while {@code now} is in
+     * {@code [acting_from, acting_until)}, otherwise {@link #role}.
+     */
+    public UserRole effectiveRoleAt(Instant now) {
+        if (elevatedRole == null || actingFrom == null || actingUntil == null) {
+            return role;
+        }
+        if (now.isBefore(actingFrom) || !now.isBefore(actingUntil)) {
+            return role;
+        }
+        return elevatedRole;
     }
 
     public UUID getId() {
@@ -146,5 +171,29 @@ public class ShardUser {
 
     public void setPasswordChangedAt(Instant passwordChangedAt) {
         this.passwordChangedAt = passwordChangedAt;
+    }
+
+    public UserRole getElevatedRole() {
+        return elevatedRole;
+    }
+
+    public void setElevatedRole(UserRole elevatedRole) {
+        this.elevatedRole = elevatedRole;
+    }
+
+    public Instant getActingFrom() {
+        return actingFrom;
+    }
+
+    public void setActingFrom(Instant actingFrom) {
+        this.actingFrom = actingFrom;
+    }
+
+    public Instant getActingUntil() {
+        return actingUntil;
+    }
+
+    public void setActingUntil(Instant actingUntil) {
+        this.actingUntil = actingUntil;
     }
 }
