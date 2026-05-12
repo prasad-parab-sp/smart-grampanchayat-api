@@ -205,3 +205,6 @@ CREATE INDEX IF NOT EXISTS idx_cert_app_file_application ON certificate_applicat
 
 -- ── Keeps tenant-specific fee history optional (omit if not needed Day 1) ────
 -- CREATE TABLE IF NOT EXISTS tenant_certificate_fee_history (...);
+
+-- Admin HTML formats (per-tenant): see also certificate-document-format.sql
+-- Officer display names on grampanchayat: see grampanchayat-officers.sql, grampanchayat-drop-sarpanch-name.sql

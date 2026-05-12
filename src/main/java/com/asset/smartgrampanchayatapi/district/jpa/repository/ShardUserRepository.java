@@ -23,4 +23,9 @@ public interface ShardUserRepository extends JpaRepository<ShardUser, UUID> {
 
     List<ShardUser> findAllByTenantIdAndRoleIn(UUID tenantId, List<UserRole> roles);
 
+    /** At most one row expected when partial unique index {@code uq_users_one_active_sarpanch_per_tenant} is present. */
+    Optional<ShardUser> findByTenantIdAndRoleAndActiveTrue(UUID tenantId, UserRole role);
+
+    Optional<ShardUser> findByTenantIdAndId(UUID tenantId, UUID id);
+
 }

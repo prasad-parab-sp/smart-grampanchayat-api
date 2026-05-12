@@ -69,4 +69,29 @@ public interface CertificateTypeRepository extends JpaRepository<CertificateType
                     """
     )
     Optional<CertificateType> findVisibleByIdForTenant(@Param("id") UUID id, @Param("tenantId") UUID tenantId);
+
+    /**
+     * Same visibility rules as {@link #findVisibleByIdForTenant} but by catalog {@code code}.
+     */
+    @Query(
+            """
+                    select ct from CertificateType ct
+                    where ct.code = :code
+                      and ct.isActive = true
+                      and (ct.tenantId is null or ct.tenantId = :tenantId)
+                      and (
+                          ct.tenantId is not null
+                          or not exists (
+                              select 1 from TenantCertificateTypeConfig tcc
+                              where tcc.certificateType = ct
+                                and tcc.tenantId = :tenantId
+                                and tcc.enabled = false
+                          )
+                      )
+                    """
+    )
+    Optional<CertificateType> findVisibleByCodeForTenant(
+            @Param("code") String code,
+            @Param("tenantId") UUID tenantId
+    );
 }

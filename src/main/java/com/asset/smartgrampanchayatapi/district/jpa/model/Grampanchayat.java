@@ -54,18 +54,6 @@ public class Grampanchayat {
     @Column(precision = 9, scale = 6)
     private BigDecimal longitude;
 
-    @Column(name = "sarpanch_id")
-    private UUID sarpanchId;
-
-    @Column(name = "deputy_sarpanch_id")
-    private UUID deputySarpanchId;
-
-    @Column(name = "gramsevak_id")
-    private UUID gramsevakId;
-
-    @Column(name = "admin_user_id")
-    private UUID adminUserId;
-
     private Integer population;
 
     @Column(name = "total_households")
@@ -82,6 +70,9 @@ public class Grampanchayat {
 
     @Column(length = 255)
     private String email;
+
+    @Column(name = "gramsevak_name", length = 300)
+    private String gramsevakName;
 
     @Column(name = "bank_account_number", length = 30)
     private String bankAccountNumber;
@@ -206,38 +197,6 @@ public class Grampanchayat {
         this.longitude = longitude;
     }
 
-    public UUID getSarpanchId() {
-        return sarpanchId;
-    }
-
-    public void setSarpanchId(UUID sarpanchId) {
-        this.sarpanchId = sarpanchId;
-    }
-
-    public UUID getDeputySarpanchId() {
-        return deputySarpanchId;
-    }
-
-    public void setDeputySarpanchId(UUID deputySarpanchId) {
-        this.deputySarpanchId = deputySarpanchId;
-    }
-
-    public UUID getGramsevakId() {
-        return gramsevakId;
-    }
-
-    public void setGramsevakId(UUID gramsevakId) {
-        this.gramsevakId = gramsevakId;
-    }
-
-    public UUID getAdminUserId() {
-        return adminUserId;
-    }
-
-    public void setAdminUserId(UUID adminUserId) {
-        this.adminUserId = adminUserId;
-    }
-
     public Integer getPopulation() {
         return population;
     }
@@ -284,6 +243,14 @@ public class Grampanchayat {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getGramsevakName() {
+        return gramsevakName;
+    }
+
+    public void setGramsevakName(String gramsevakName) {
+        this.gramsevakName = gramsevakName;
     }
 
     public String getBankAccountNumber() {

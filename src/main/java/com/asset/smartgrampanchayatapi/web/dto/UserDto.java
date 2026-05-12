@@ -14,19 +14,31 @@ public record UserDto(
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) UUID tenantId,
         String email,
         String phone,
-        @Schema(requiredMode = Schema.RequiredMode.REQUIRED) UserRole role,
+        @Schema(description = "Stored role from users.role", requiredMode = Schema.RequiredMode.REQUIRED) UserRole role,
+        @Schema(
+                description = "Role for UI / permissions: elevated role while acting window is active, else role",
+                requiredMode = Schema.RequiredMode.REQUIRED
+        ) UserRole effectiveRole,
+        @Schema(description = "Temporary elevated role when acting window is configured") UserRole elevatedRole,
+        @Schema(description = "Start of elevation window (inclusive)") Instant actingFrom,
+        @Schema(description = "End of elevation window (exclusive)") Instant actingUntil,
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) String firstName,
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) String lastName,
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) boolean active,
         Instant lastLoginAt
 ) {
     public static UserDto fromEntity(ShardUser user) {
+        Instant now = Instant.now();
         return new UserDto(
                 user.getId(),
                 user.getTenantId(),
                 user.getEmail(),
                 user.getPhone(),
                 user.getRole(),
+                user.effectiveRoleAt(now),
+                user.getElevatedRole(),
+                user.getActingFrom(),
+                user.getActingUntil(),
                 user.getFirstName(),
                 user.getLastName(),
                 user.isActive(),
