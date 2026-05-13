@@ -7,18 +7,16 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 /**
- * Gramsevak must re-confirm credentials to approve (no JWT yet). Identifier is mobile or email as used at login.
+ * Gramsevak credentials to reject an application (same optional remark lines as approve).
  */
-@Schema(name = "CertificateApplicationApproveRequest")
-public record CertificateApplicationApproveRequest(
+@Schema(name = "CertificateApplicationRejectRequest")
+public record CertificateApplicationRejectRequest(
         @NotBlank @Schema(requiredMode = Schema.RequiredMode.REQUIRED, example = "9405715871") String identifier,
         @NotBlank @Schema(requiredMode = Schema.RequiredMode.REQUIRED) String password,
-        @Size(max = 20) @Schema(
-                description = "Optional: each non-blank line is appended as a separate staff remark before approval."
-        )
+        @Size(max = 20) @Schema(description = "Optional: each non-blank line is appended as a staff remark before rejection.")
         List<@NotBlank @Size(max = 4000) String> remarksToAppend
 ) {
-    public CertificateApplicationApproveRequest {
+    public CertificateApplicationRejectRequest {
         remarksToAppend = remarksToAppend == null ? List.of() : List.copyOf(remarksToAppend);
     }
 }

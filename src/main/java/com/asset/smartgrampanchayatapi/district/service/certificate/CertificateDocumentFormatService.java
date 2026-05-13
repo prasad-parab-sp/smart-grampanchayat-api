@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -15,6 +17,8 @@ import com.asset.smartgrampanchayatapi.web.dto.CertificateDocumentFormatUpsertRe
 
 @Service
 public class CertificateDocumentFormatService {
+
+    private static final Logger log = LoggerFactory.getLogger(CertificateDocumentFormatService.class);
 
     private final TenantShardRoutingService tenantShardRoutingService;
     private final CertificateDocumentFormatDataAccessService certificateDocumentFormatDataAccessService;
@@ -44,7 +48,18 @@ public class CertificateDocumentFormatService {
                 .runOnShard(
                         TenantCodeContext.getRequired(),
                         "Could not create certificate document format",
-                        ctx -> Optional.of(certificateDocumentFormatDataAccessService.create(ctx, body))
+                        ctx -> {
+                            CertificateDocumentFormatDto saved =
+                                    certificateDocumentFormatDataAccessService.create(ctx, body);
+                            log.debug(
+                                    "Wrote certificate_document_format id={} to district shard DB {} ({}:{})",
+                                    saved.id(),
+                                    ctx.district().getDbName(),
+                                    ctx.district().getDbHost(),
+                                    ctx.district().getDbPort()
+                            );
+                            return Optional.of(saved);
+                        }
                 )
                 .orElseThrow(this::unknownTenant);
     }
@@ -54,7 +69,18 @@ public class CertificateDocumentFormatService {
                 .runOnShard(
                         TenantCodeContext.getRequired(),
                         "Could not update certificate document format",
-                        ctx -> Optional.of(certificateDocumentFormatDataAccessService.update(ctx, id, body))
+                        ctx -> {
+                            CertificateDocumentFormatDto saved =
+                                    certificateDocumentFormatDataAccessService.update(ctx, id, body);
+                            log.debug(
+                                    "Wrote certificate_document_format id={} to district shard DB {} ({}:{})",
+                                    id,
+                                    ctx.district().getDbName(),
+                                    ctx.district().getDbHost(),
+                                    ctx.district().getDbPort()
+                            );
+                            return Optional.of(saved);
+                        }
                 )
                 .orElseThrow(this::unknownTenant);
     }
@@ -65,6 +91,13 @@ public class CertificateDocumentFormatService {
                         TenantCodeContext.getRequired(),
                         "Could not delete certificate document format",
                         ctx -> {
+                            log.debug(
+                                    "Deleting certificate_document_format id={} on district shard DB {} ({}:{})",
+                                    id,
+                                    ctx.district().getDbName(),
+                                    ctx.district().getDbHost(),
+                                    ctx.district().getDbPort()
+                            );
                             certificateDocumentFormatDataAccessService.deleteForTenant(ctx, id);
                             return Optional.of(Boolean.TRUE);
                         }

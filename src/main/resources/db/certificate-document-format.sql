@@ -1,6 +1,11 @@
 -- =============================================================================
--- Admin printable certificate formats (district shard). Run on each shard DB
--- after tenants + certificate_type exist.
+-- Admin printable certificate formats (district shard).
+--
+-- If certificate_document_format already exists in this DB, you do not need to
+-- re-create it: the CREATE below is IF NOT EXISTS (no-op). The INSERT blocks
+-- are optional seeds (ON CONFLICT DO NOTHING) and safe to re-run.
+--
+-- Run on each shard DB after tenants + certificate_type exist.
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS certificate_document_format (

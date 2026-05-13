@@ -18,6 +18,11 @@ import com.asset.smartgrampanchayatapi.district.service.routing.TenantShardRouti
 import com.asset.smartgrampanchayatapi.web.dto.CertificateDocumentFormatDto;
 import com.asset.smartgrampanchayatapi.web.dto.CertificateDocumentFormatUpsertRequest;
 
+/**
+ * Reads and writes {@code certificate_document_format} on the <strong>district shard</strong> (see
+ * {@link com.asset.smartgrampanchayatapi.district.service.routing.TenantShardRoutingService} and
+ * {@code master.districts} JDBC fields). This is <em>not</em> the primary {@code spring.datasource} database.
+ */
 @Service
 public class CertificateDocumentFormatDataAccessService {
 
@@ -48,12 +53,13 @@ public class CertificateDocumentFormatDataAccessService {
     public CertificateDocumentFormatDto create(TenantShardRoutingContext ctx, CertificateDocumentFormatUpsertRequest req) {
         Instant now = Instant.now();
         UUID certTypeId = resolveCertificateTypeIdOrNull(ctx.tenantId(), req.certificateTypeCode());
+        ensureSingleFormatPerCertificateType(ctx.tenantId(), certTypeId, null);
         CertificateDocumentFormat row = new CertificateDocumentFormat();
         row.setId(UUID.randomUUID());
         row.setTenantId(ctx.tenantId());
         row.setCertificateTypeId(certTypeId);
         applyUpsert(row, req, now, true);
-        formatRepository.save(row);
+        formatRepository.saveAndFlush(row);
         return toDto(row);
     }
 
@@ -70,9 +76,10 @@ public class CertificateDocumentFormatDataAccessService {
                         "Certificate format not found for this tenant."
                 ));
         UUID certTypeId = resolveCertificateTypeIdOrNull(ctx.tenantId(), req.certificateTypeCode());
+        ensureSingleFormatPerCertificateType(ctx.tenantId(), certTypeId, id);
         row.setCertificateTypeId(certTypeId);
         applyUpsert(row, req, Instant.now(), false);
-        formatRepository.save(row);
+       formatRepository.saveAndFlush(row);
         return toDto(row);
     }
 
@@ -104,6 +111,37 @@ public class CertificateDocumentFormatDataAccessService {
             row.setCreatedAt(now);
         }
         row.setUpdatedAt(now);
+    }
+
+    /**
+     * Enforces at most one {@link CertificateDocumentFormat} per (tenant, certificate type) when a type is set.
+     * If {@code certificateTypeId} is {@code null}, no check runs (format not tied to a specific type).
+     * <p>
+     * On update, pass the row being saved as {@code exceptFormatId} so the existing assignment does not count
+     * as a duplicate; another row using the same type still triggers conflict.
+     *
+     * @param tenantId          tenant whose formats are checked
+     * @param certificateTypeId resolved {@link CertificateType} id, or {@code null} to skip
+     * @param exceptFormatId    format id to exclude from the duplicate search, or {@code null} on create
+     * @throws ResponseStatusException {@code 409 CONFLICT} when another format already uses this certificate type
+     */
+    private void ensureSingleFormatPerCertificateType(UUID tenantId, UUID certificateTypeId, UUID exceptFormatId) {
+        if (certificateTypeId == null) {
+            return;
+        }
+        boolean conflict = exceptFormatId == null
+                ? formatRepository.existsByTenantIdAndCertificateTypeId(tenantId, certificateTypeId)
+                : formatRepository.existsByTenantIdAndCertificateTypeIdAndIdNotIn(
+                        tenantId,
+                        certificateTypeId,
+                        List.of(exceptFormatId)
+                );
+        if (conflict) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "This certificate type already has a format for this tenant. Edit that format instead of creating another."
+            );
+        }
     }
 
     private UUID resolveCertificateTypeIdOrNull(UUID tenantId, String rawCode) {

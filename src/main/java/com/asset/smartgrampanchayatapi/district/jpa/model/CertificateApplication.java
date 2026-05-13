@@ -79,6 +79,10 @@ public class CertificateApplication {
     @Column(name = "issued_document_html", columnDefinition = "text")
     private String issuedDocumentHtml;
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "staff_remarks_json", nullable = false, columnDefinition = "jsonb")
+    private JsonNode staffRemarksJson;
+
     public CertificateApplication() {
     }
 
@@ -232,5 +236,13 @@ public class CertificateApplication {
 
     public void setIssuedDocumentHtml(String issuedDocumentHtml) {
         this.issuedDocumentHtml = issuedDocumentHtml;
+    }
+
+    public JsonNode getStaffRemarksJson() {
+        return staffRemarksJson;
+    }
+
+    public void setStaffRemarksJson(JsonNode staffRemarksJson) {
+        this.staffRemarksJson = staffRemarksJson;
     }
 }
