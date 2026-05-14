@@ -1,6 +1,8 @@
 package com.asset.smartgrampanchayatapi.web.dto;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -32,7 +34,9 @@ public record CertificateApplicationDto(
         Instant approvedAt,
         UUID approvedByUserId,
         @Schema(description = "Keyed by certificate_type_field.field_key (JSON object from DB via ObjectMapper)")
-        Map<String, Object> additionalValues
+        Map<String, Object> additionalValues,
+        @Schema(description = "Gramsevak remarks (newest at end of list)")
+        List<CertificateStaffRemarkDto> staffRemarks
 ) {
     public static CertificateApplicationDto fromEntity(CertificateApplication e, ObjectMapper objectMapper) {
         Map<String, Object> values = jsonNodeToMap(e.getAdditionalValuesJson(), objectMapper);
@@ -54,8 +58,46 @@ public record CertificateApplicationDto(
                 e.getPaymentReference(),
                 e.getApprovedAt(),
                 e.getApprovedByUserId(),
-                values
+                values,
+                parseStaffRemarks(e.getStaffRemarksJson())
         );
+    }
+
+    private static List<CertificateStaffRemarkDto> parseStaffRemarks(JsonNode root) {
+        if (root == null || root.isNull() || !root.isArray()) {
+            return List.of();
+        }
+        List<CertificateStaffRemarkDto> out = new ArrayList<>();
+        for (JsonNode el : root) {
+            if (!el.isObject() || !el.hasNonNull("text")) {
+                continue;
+            }
+            String text = el.get("text").asText("").trim();
+            if (text.isEmpty()) {
+                continue;
+            }
+            Instant createdAt = Instant.EPOCH;
+            if (el.hasNonNull("createdAt")) {
+                try {
+                    createdAt = Instant.parse(el.get("createdAt").asText());
+                } catch (Exception ignored) {
+                    // keep EPOCH
+                }
+            }
+            UUID by = null;
+            if (el.hasNonNull("createdByUserId")) {
+                try {
+                    by = UUID.fromString(el.get("createdByUserId").asText());
+                } catch (Exception ignored) {
+                    // skip invalid
+                }
+            }
+            if (by == null) {
+                continue;
+            }
+            out.add(new CertificateStaffRemarkDto(createdAt, by, text));
+        }
+        return List.copyOf(out);
     }
 
     private static final TypeReference<Map<String, Object>> MAP_STRING_OBJECT = new TypeReference<>() {};

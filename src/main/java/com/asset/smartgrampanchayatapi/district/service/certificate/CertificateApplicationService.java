@@ -1,5 +1,6 @@
 package com.asset.smartgrampanchayatapi.district.service.certificate;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -14,7 +15,9 @@ import com.asset.smartgrampanchayatapi.district.jpa.model.UserRole;
 import com.asset.smartgrampanchayatapi.district.routing.TenantCodeContext;
 import com.asset.smartgrampanchayatapi.district.service.routing.TenantShardRoutingService;
 import com.asset.smartgrampanchayatapi.district.service.user.UserService;
+import com.asset.smartgrampanchayatapi.web.dto.CertificateApplicationAddStaffRemarksRequest;
 import com.asset.smartgrampanchayatapi.web.dto.CertificateApplicationApproveRequest;
+import com.asset.smartgrampanchayatapi.web.dto.CertificateApplicationRejectRequest;
 import com.asset.smartgrampanchayatapi.web.dto.CertificateApplicationDto;
 import com.asset.smartgrampanchayatapi.web.dto.CertificateApplicationSubmitRequest;
 import com.asset.smartgrampanchayatapi.web.dto.CertificateIssuedDocumentDto;
@@ -116,6 +119,81 @@ public class CertificateApplicationService {
                         ctx -> Optional.of(certificateApplicationDataAccessService.approveApplication(
                                 ctx.tenantId(),
                                 applicationId,
+                                staff.getId(),
+                                normalizeRemarkLines(body.remarksToAppend())
+                        ))
+                )
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Unknown tenant: no master DB row for tenant_code matching X-Tenant-Code: " + tenantCode
+                                + ". Use GET /api/tenants?tenantCode=... to verify, or insert tenants on master."
+                ));
+    }
+
+    /**
+     * Gramsevak-only: rejects the application (not approved / not cancelled). Optional remark lines appended first.
+     */
+    public CertificateApplicationDto reject(UUID applicationId, CertificateApplicationRejectRequest body) {
+        String tenantCode = TenantCodeContext.getRequired();
+        ShardUser staff = userService
+                .verifyActiveUserCredentials(body.identifier(), body.password())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.UNAUTHORIZED,
+                        "Invalid credentials."
+                ));
+        if (staff.getRole() != UserRole.GRAMSEVAK) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Only Gramsevak may reject certificate applications."
+            );
+        }
+        return tenantShardRoutingService
+                .runOnShard(
+                        tenantCode,
+                        "Could not reject certificate application",
+                        ctx -> Optional.of(certificateApplicationDataAccessService.rejectApplication(
+                                ctx.tenantId(),
+                                applicationId,
+                                staff.getId(),
+                                normalizeRemarkLines(body.remarksToAppend())
+                        ))
+                )
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Unknown tenant: no master DB row for tenant_code matching X-Tenant-Code: " + tenantCode
+                                + ". Use GET /api/tenants?tenantCode=... to verify, or insert tenants on master."
+                ));
+    }
+
+    /**
+     * Gramsevak-only: appends one or more remarks (same credential check as approve).
+     */
+    public CertificateApplicationDto appendStaffRemarks(UUID applicationId, CertificateApplicationAddStaffRemarksRequest body) {
+        String tenantCode = TenantCodeContext.getRequired();
+        ShardUser staff = userService
+                .verifyActiveUserCredentials(body.identifier(), body.password())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.UNAUTHORIZED,
+                        "Invalid credentials."
+                ));
+        if (staff.getRole() != UserRole.GRAMSEVAK) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Only Gramsevak may add staff remarks."
+            );
+        }
+        List<String> lines = normalizeRemarkLines(body.texts());
+        if (lines.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "At least one non-blank remark line is required.");
+        }
+        return tenantShardRoutingService
+                .runOnShard(
+                        tenantCode,
+                        "Could not append staff remarks",
+                        ctx -> Optional.of(certificateApplicationDataAccessService.appendStaffRemarks(
+                                ctx.tenantId(),
+                                applicationId,
+                                lines,
                                 staff.getId()
                         ))
                 )
@@ -124,6 +202,23 @@ public class CertificateApplicationService {
                         "Unknown tenant: no master DB row for tenant_code matching X-Tenant-Code: " + tenantCode
                                 + ". Use GET /api/tenants?tenantCode=... to verify, or insert tenants on master."
                 ));
+    }
+
+    private static List<String> normalizeRemarkLines(List<String> raw) {
+        if (raw == null) {
+            return List.of();
+        }
+        List<String> out = new ArrayList<>();
+        for (String s : raw) {
+            if (s == null) {
+                continue;
+            }
+            String t = s.trim();
+            if (!t.isEmpty()) {
+                out.add(t);
+            }
+        }
+        return List.copyOf(out);
     }
 
     /**

@@ -16,7 +16,9 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.asset.smartgrampanchayatapi.district.jpa.model.CertificateApplicationStatus;
 import com.asset.smartgrampanchayatapi.district.service.certificate.CertificateApplicationService;
+import com.asset.smartgrampanchayatapi.web.dto.CertificateApplicationAddStaffRemarksRequest;
 import com.asset.smartgrampanchayatapi.web.dto.CertificateApplicationApproveRequest;
+import com.asset.smartgrampanchayatapi.web.dto.CertificateApplicationRejectRequest;
 import com.asset.smartgrampanchayatapi.web.dto.CertificateApplicationDto;
 import com.asset.smartgrampanchayatapi.web.dto.CertificateApplicationSubmitRequest;
 import com.asset.smartgrampanchayatapi.web.dto.CertificateIssuedDocumentDto;
@@ -183,5 +185,58 @@ public class CertificateApplicationController {
             @Valid @RequestBody CertificateApplicationApproveRequest body
     ) {
         return ResponseEntity.ok(certificateApplicationService.approve(id, body));
+    }
+
+    @PostMapping("/{id}/reject")
+    @Operation(
+            summary = "Reject certificate application (Gramsevak only)",
+            description = "Verifies staff credentials. Sets status to REJECTED. Optional remark lines are stored first. "
+                    + "Not allowed when already APPROVED or CANCELLED. Idempotent if already REJECTED."
+    )
+    @Parameter(
+            name = TenantCodeHeaderFilter.HEADER_TENANT_CODE,
+            in = ParameterIn.HEADER,
+            required = true,
+            example = "GP001"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            content = @Content(schema = @Schema(implementation = CertificateApplicationDto.class))
+    )
+    @ApiResponse(responseCode = "401", description = "Invalid credentials", content = @Content)
+    @ApiResponse(responseCode = "403", description = "User inactive or not Gramsevak", content = @Content)
+    @ApiResponse(responseCode = "404", description = "Unknown tenant or application not found", content = @Content)
+    @ApiResponse(responseCode = "409", description = "Cannot reject from this status", content = @Content)
+    @ApiResponse(responseCode = "503", description = "District database unavailable", content = @Content)
+    public ResponseEntity<CertificateApplicationDto> reject(
+            @PathVariable("id") UUID id,
+            @Valid @RequestBody CertificateApplicationRejectRequest body
+    ) {
+        return ResponseEntity.ok(certificateApplicationService.reject(id, body));
+    }
+
+    @PostMapping("/{id}/staff-remarks")
+    @Operation(
+            summary = "Append staff remarks (Gramsevak only)",
+            description = "Verifies staff credentials. Appends one or more remark lines; same auth model as approve."
+    )
+    @Parameter(
+            name = TenantCodeHeaderFilter.HEADER_TENANT_CODE,
+            in = ParameterIn.HEADER,
+            required = true,
+            example = "GP001"
+    )
+    @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = CertificateApplicationDto.class)))
+    @ApiResponse(responseCode = "400", description = "No remark text or limits exceeded", content = @Content)
+    @ApiResponse(responseCode = "401", description = "Invalid credentials", content = @Content)
+    @ApiResponse(responseCode = "403", description = "User inactive or not Gramsevak", content = @Content)
+    @ApiResponse(responseCode = "404", description = "Unknown tenant or application not found", content = @Content)
+    @ApiResponse(responseCode = "409", description = "Remarks not allowed in this status", content = @Content)
+    @ApiResponse(responseCode = "503", description = "District database unavailable", content = @Content)
+    public ResponseEntity<CertificateApplicationDto> appendStaffRemarks(
+            @PathVariable("id") UUID id,
+            @Valid @RequestBody CertificateApplicationAddStaffRemarksRequest body
+    ) {
+        return ResponseEntity.ok(certificateApplicationService.appendStaffRemarks(id, body));
     }
 }

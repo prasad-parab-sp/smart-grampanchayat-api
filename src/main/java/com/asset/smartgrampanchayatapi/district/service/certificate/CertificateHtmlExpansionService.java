@@ -3,8 +3,13 @@ package com.asset.smartgrampanchayatapi.district.service.certificate;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Iterator;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Pattern;
+
+import com.fasterxml.jackson.databind.JsonNode;
 
 import com.asset.smartgrampanchayatapi.district.jpa.model.CertificateApplication;
 import com.asset.smartgrampanchayatapi.district.jpa.model.CertificateDocumentFormat;
@@ -12,8 +17,12 @@ import com.asset.smartgrampanchayatapi.web.dto.TenantProfileDto;
 
 /**
  * Server-side HTML for issued certificates — mirrors web {@code admin-format-preview.utils.ts} token rules.
+ * Dynamic certificate type fields use {@code {$extra.fieldKey}} with values from
+ * {@code certificate_application.additional_values_json} (same keys as {@code certificate_type_field.field_key}).
  */
 public final class CertificateHtmlExpansionService {
+
+    private static final Pattern EXTRA_JSON_KEY = Pattern.compile("^[a-zA-Z0-9_-]+$");
 
     private static final ZoneId IST = ZoneId.of("Asia/Kolkata");
 
@@ -75,12 +84,47 @@ public final class CertificateHtmlExpansionService {
         out = out.replace("[सरपंच]", escapeHtml(sarpanch));
         out = out.replace("[ग्रामसेवक]", escapeHtml(gramsevak));
 
+        out = applyAdditionalJsonPlaceholders(out, app.getAdditionalValuesJson());
+
         out = maybeInjectDocumentTitle(out, documentTitle);
         String footerNote = format.getFooterNote();
         if (footerNote != null && !footerNote.isBlank()) {
             out = out + "<p class=\"fmt-footer-note\">" + escapeHtml(footerNote.trim()) + "</p>";
         }
         return "<div class=\"fmt-preview-print\">" + out + "</div>";
+    }
+
+    private static String applyAdditionalJsonPlaceholders(String html, JsonNode root) {
+        if (root == null || root.isNull() || !root.isObject()) {
+            return html;
+        }
+        String out = html;
+        for (Iterator<Map.Entry<String, JsonNode>> it = root.fields(); it.hasNext();) {
+            Map.Entry<String, JsonNode> e = it.next();
+            String key = e.getKey();
+            if (key == null || !EXTRA_JSON_KEY.matcher(key).matches()) {
+                continue;
+            }
+            String token = "{$extra." + key + "}";
+            if (!out.contains(token)) {
+                continue;
+            }
+            out = out.replace(token, escapeHtml(jsonNodeToPlainText(e.getValue())));
+        }
+        return out;
+    }
+
+    private static String jsonNodeToPlainText(JsonNode n) {
+        if (n == null || n.isNull()) {
+            return "";
+        }
+        if (n.isTextual()) {
+            return n.asText();
+        }
+        if (n.isNumber() || n.isBoolean()) {
+            return n.asText();
+        }
+        return n.toString();
     }
 
     private static String maybeInjectDocumentTitle(String html, String documentTitle) {
