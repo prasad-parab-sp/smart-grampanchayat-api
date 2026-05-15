@@ -12,17 +12,13 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-/**
- * Extra form field definition for {@link CertificateType} (district shard {@code certificate_type_field}).
- * Values submitted with an application live in {@code certificate_application.additional_values_json} keyed by
- * {@link #fieldKey} (except FILE types, stored in {@code certificate_application_file}).
- */
+/** Maps {@code public.certificate_type_field} on the district shard (PostgreSQL). */
 @Entity
 @Table(name = "certificate_type_field")
 public class CertificateTypeField {
 
     @Id
-    @Column(nullable = false, updatable = false)
+    @Column(name = "id", nullable = false, updatable = false)
     private UUID id;
 
     @Column(name = "certificate_type_id", nullable = false)
@@ -34,25 +30,15 @@ public class CertificateTypeField {
     @Column(name = "label_mr", nullable = false, length = 500)
     private String labelMr;
 
-    @Column(name = "label_en", length = 500)
-    private String labelEn;
-
     @Column(name = "placeholder_mr", length = 500)
     private String placeholderMr;
 
-    @Column(name = "placeholder_en", length = 500)
-    private String placeholderEn;
-
-    @Column(name = "help_text_mr", columnDefinition = "text")
+    @Column(name = "help_text_mr")
     private String helpTextMr;
-
-    @Column(name = "help_text_en", columnDefinition = "text")
-    private String helpTextEn;
 
     @Column(name = "data_type", nullable = false, length = 32)
     private String dataType;
 
-    /** Maps to {@code certificate_type_field.required}. */
     @Column(name = "required", nullable = false)
     private boolean required;
 
@@ -60,7 +46,7 @@ public class CertificateTypeField {
     private int sortOrder;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "options_json", columnDefinition = "jsonb")
+    @Column(name = "options_json")
     private JsonNode optionsJson;
 
     @Column(name = "max_files")
@@ -69,73 +55,135 @@ public class CertificateTypeField {
     @Column(name = "max_bytes")
     private Long maxBytes;
 
-    @Column(name = "allowed_mime_csv", length = 300)
-    private String allowedMimeCsv;
+    @Column(name = "label_en", length = 500)
+    private String labelEn;
 
-    protected CertificateTypeField() {
+    @Column(name = "placeholder_en", length = 500)
+    private String placeholderEn;
+
+    @Column(name = "help_text_en")
+    private String helpTextEn;
+
+    public CertificateTypeField() {
     }
 
     public UUID getId() {
         return id;
     }
 
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
     public UUID getCertificateTypeId() {
         return certificateTypeId;
+    }
+
+    public void setCertificateTypeId(UUID certificateTypeId) {
+        this.certificateTypeId = certificateTypeId;
     }
 
     public String getFieldKey() {
         return fieldKey;
     }
 
+    public void setFieldKey(String fieldKey) {
+        this.fieldKey = fieldKey;
+    }
+
     public String getLabelMr() {
         return labelMr;
     }
 
-    public String getLabelEn() {
-        return labelEn;
+    public void setLabelMr(String labelMr) {
+        this.labelMr = labelMr;
     }
 
     public String getPlaceholderMr() {
         return placeholderMr;
     }
 
-    public String getPlaceholderEn() {
-        return placeholderEn;
+    public void setPlaceholderMr(String placeholderMr) {
+        this.placeholderMr = placeholderMr;
     }
 
     public String getHelpTextMr() {
         return helpTextMr;
     }
 
-    public String getHelpTextEn() {
-        return helpTextEn;
+    public void setHelpTextMr(String helpTextMr) {
+        this.helpTextMr = helpTextMr;
     }
 
     public String getDataType() {
         return dataType;
     }
 
+    public void setDataType(String dataType) {
+        this.dataType = dataType;
+    }
+
     public boolean isRequired() {
         return required;
+    }
+
+    public void setRequired(boolean required) {
+        this.required = required;
     }
 
     public int getSortOrder() {
         return sortOrder;
     }
 
+    public void setSortOrder(int sortOrder) {
+        this.sortOrder = sortOrder;
+    }
+
     public JsonNode getOptionsJson() {
         return optionsJson;
+    }
+
+    public void setOptionsJson(JsonNode optionsJson) {
+        this.optionsJson = optionsJson;
     }
 
     public Short getMaxFiles() {
         return maxFiles;
     }
 
+    public void setMaxFiles(Short maxFiles) {
+        this.maxFiles = maxFiles;
+    }
+
     public Long getMaxBytes() {
         return maxBytes;
     }
 
-    public String getAllowedMimeCsv() {
-        return allowedMimeCsv;
+    public void setMaxBytes(Long maxBytes) {
+        this.maxBytes = maxBytes;
+    }
+
+    public String getLabelEn() {
+        return labelEn;
+    }
+
+    public void setLabelEn(String labelEn) {
+        this.labelEn = labelEn;
+    }
+
+    public String getPlaceholderEn() {
+        return placeholderEn;
+    }
+
+    public void setPlaceholderEn(String placeholderEn) {
+        this.placeholderEn = placeholderEn;
+    }
+
+    public String getHelpTextEn() {
+        return helpTextEn;
+    }
+
+    public void setHelpTextEn(String helpTextEn) {
+        this.helpTextEn = helpTextEn;
     }
 }

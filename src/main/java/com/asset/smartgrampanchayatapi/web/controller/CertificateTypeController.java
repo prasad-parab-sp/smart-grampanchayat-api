@@ -5,6 +5,8 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -13,6 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.asset.smartgrampanchayatapi.district.jpa.model.CertificateTypeCategory;
 import com.asset.smartgrampanchayatapi.district.service.certificate.CertificateTypeService;
 import com.asset.smartgrampanchayatapi.web.dto.CertificateTypeDto;
+import com.asset.smartgrampanchayatapi.web.dto.CertificateTypeUpsertRequest;
 import com.asset.smartgrampanchayatapi.web.filter.TenantCodeHeaderFilter;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -23,6 +26,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/certificate-types")
@@ -72,5 +76,21 @@ public class CertificateTypeController {
                         HttpStatus.NOT_FOUND,
                         "Unknown tenant code or tenant could not be resolved."
                 ));
+    }
+
+    @PostMapping
+    @Operation(
+            summary = "Create a tenant-owned certificate type",
+            description = "Inserts into district shard table certificate_type with tenant_id set from X-Tenant-Code. "
+                    + "Code must be unique for the tenant and must not match a platform type (case-insensitive). "
+                    + "Optional extraFields become rows in certificate_type_field."
+    )
+    @Parameter(name = TenantCodeHeaderFilter.HEADER_TENANT_CODE, in = ParameterIn.HEADER, required = true)
+    @ApiResponse(responseCode = "201", content = @Content(schema = @Schema(implementation = CertificateTypeDto.class)))
+    @ApiResponse(responseCode = "404", description = "Unknown tenant code", content = @Content)
+    @ApiResponse(responseCode = "409", description = "Code conflict with platform or duplicate tenant code", content = @Content)
+    public ResponseEntity<CertificateTypeDto> create(@Valid @RequestBody CertificateTypeUpsertRequest body) {
+        CertificateTypeDto saved = certificateTypeService.createCertificateType(body);
+        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 }

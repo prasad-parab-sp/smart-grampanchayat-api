@@ -1,15 +1,23 @@
 package com.asset.smartgrampanchayatapi.district.service.certificate;
 
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.asset.smartgrampanchayatapi.district.jpa.model.CertificateType;
 import com.asset.smartgrampanchayatapi.district.jpa.model.CertificateTypeCategory;
 import com.asset.smartgrampanchayatapi.district.jpa.model.CertificateTypeField;
@@ -17,6 +25,11 @@ import com.asset.smartgrampanchayatapi.district.jpa.model.TenantCertificateTypeC
 import com.asset.smartgrampanchayatapi.district.jpa.repository.CertificateTypeFieldRepository;
 import com.asset.smartgrampanchayatapi.district.jpa.repository.CertificateTypeRepository;
 import com.asset.smartgrampanchayatapi.district.jpa.repository.TenantCertificateTypeConfigRepository;
+import com.asset.smartgrampanchayatapi.district.service.routing.TenantShardRoutingContext;
+import com.asset.smartgrampanchayatapi.web.dto.CertificateTypeDto;
+import com.asset.smartgrampanchayatapi.web.dto.CertificateTypeFieldDto;
+import com.asset.smartgrampanchayatapi.web.dto.CertificateTypeFieldUpsertRequest;
+import com.asset.smartgrampanchayatapi.web.dto.CertificateTypeUpsertRequest;
 
 @Service
 public class CertificateTypeDataAccessService {
@@ -76,5 +89,142 @@ public class CertificateTypeDataAccessService {
             byTypeId.computeIfAbsent(field.getCertificateTypeId(), __ -> new ArrayList<>()).add(field);
         }
         return byTypeId;
+    }
+
+    private static final int MAX_EXTRA_FIELDS = 40;
+
+    /** Used when {@code icon} is omitted or blank on insert. */
+    private static final String DEFAULT_CERTIFICATE_TYPE_ICON = "📜";
+
+    /**
+     * Inserts {@code certificate_type} with {@code tenant_id} set to the shard tenant, and optional
+     * {@code certificate_type_field} rows.
+     */
+    @Transactional(transactionManager = "districtTransactionManager")
+    public CertificateTypeDto insertTenantCertificateType(TenantShardRoutingContext ctx, CertificateTypeUpsertRequest req) {
+        validateInsert(req, ctx.tenantId());
+        Instant now = Instant.now();
+        UUID id = UUID.randomUUID();
+        CertificateType ct = new CertificateType();
+        ct.setId(id);
+        ct.setTenantId(ctx.tenantId());
+        applyTypeFields(ct, req, now);
+        certificateTypeRepository.saveAndFlush(ct);
+        insertExtraFields(id, extraFieldRows(req));
+        return toDtoWithFields(ct);
+    }
+
+    private CertificateTypeDto toDtoWithFields(CertificateType ct) {
+        List<CertificateTypeField> fields =
+                certificateTypeFieldRepository.findByCertificateTypeIdOrderBySortOrderAsc(ct.getId());
+        List<CertificateTypeFieldDto> fieldDtos = fields.stream().map(CertificateTypeFieldDto::fromEntity).toList();
+        return CertificateTypeDto.fromCertificateTypeAndTenantConfig(
+                ct,
+                null,
+                ct.getDefaultFeeAmount(),
+                fieldDtos
+        );
+    }
+
+    private static List<CertificateTypeFieldUpsertRequest> extraFieldRows(CertificateTypeUpsertRequest req) {
+        return req.extraFields() == null ? List.of() : req.extraFields();
+    }
+
+    private void validateInsert(CertificateTypeUpsertRequest req, UUID tenantId) {
+        String code = normalizeCode(req.code());
+        if (certificateTypeRepository.existsPlatformCertificateTypeWithCodeIgnoreCase(code)) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "This code matches a platform certificate type. Choose a different code."
+            );
+        }
+        if (certificateTypeRepository.existsByTenantIdAndCode(tenantId, code)) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "A certificate type with this code already exists for this tenant."
+            );
+        }
+        List<CertificateTypeFieldUpsertRequest> fields = extraFieldRows(req);
+        if (fields.size() > MAX_EXTRA_FIELDS) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "At most " + MAX_EXTRA_FIELDS + " extra fields are allowed."
+            );
+        }
+        Set<String> seenKeys = new HashSet<>();
+        for (CertificateTypeFieldUpsertRequest f : fields) {
+            String key = normalizeCode(f.fieldKey());
+            if (!seenKeys.add(key)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Duplicate field key: " + key);
+            }
+            if ("SELECT".equals(f.dataType())) {
+                JsonNode opts = f.optionsJson();
+                if (opts == null || !opts.isArray() || opts.isEmpty()) {
+                    throw new ResponseStatusException(
+                            HttpStatus.BAD_REQUEST,
+                            "SELECT fields require a non-empty optionsJson array."
+                    );
+                }
+            }
+        }
+    }
+
+    private static void applyTypeFields(CertificateType ct, CertificateTypeUpsertRequest req, Instant now) {
+        ct.setCode(normalizeCode(req.code()));
+        ct.setCategory(req.category());
+        ct.setNameMr(req.nameMr().trim());
+        ct.setNameEn(trimToNull(req.nameEn()));
+        ct.setDescriptionMr(trimToNull(req.descriptionMr()));
+        ct.setDescriptionEn(trimToNull(req.descriptionEn()));
+        ct.setExtraFieldsSectionTitleMr(trimToNull(req.extraFieldsSectionTitleMr()));
+        ct.setExtraFieldsSectionTitleEn(trimToNull(req.extraFieldsSectionTitleEn()));
+        BigDecimal fee = req.defaultFeeAmount() == null ? BigDecimal.ZERO : req.defaultFeeAmount();
+        ct.setDefaultFeeAmount(fee);
+        ct.setEstimatedDaysTxt(trimToNull(req.estimatedDaysTxt()));
+        String icon = trimToNull(req.icon());
+        ct.setIcon(icon != null ? icon : DEFAULT_CERTIFICATE_TYPE_ICON);
+        ct.setSortOrder(req.sortOrder());
+        ct.setActive(req.active());
+        ct.setCreatedAt(now);
+        ct.setUpdatedAt(now);
+    }
+
+    private void insertExtraFields(UUID certificateTypeId, List<CertificateTypeFieldUpsertRequest> fields) {
+        for (CertificateTypeFieldUpsertRequest f : fields) {
+            CertificateTypeField row = new CertificateTypeField();
+            row.setId(UUID.randomUUID());
+            row.setCertificateTypeId(certificateTypeId);
+            row.setFieldKey(normalizeCode(f.fieldKey()));
+            row.setLabelMr(f.labelMr().trim());
+            row.setLabelEn(trimToNull(f.labelEn()));
+            row.setPlaceholderMr(trimToNull(f.placeholderMr()));
+            row.setPlaceholderEn(trimToNull(f.placeholderEn()));
+            row.setHelpTextMr(trimToNull(f.helpTextMr()));
+            row.setHelpTextEn(trimToNull(f.helpTextEn()));
+            row.setDataType(f.dataType());
+            row.setRequired(f.required());
+            row.setSortOrder(f.sortOrder());
+            row.setOptionsJson(f.optionsJson());
+            if ("FILE".equals(f.dataType())) {
+                row.setMaxFiles(f.maxFiles() != null ? f.maxFiles().shortValue() : Short.valueOf((short) 1));
+                row.setMaxBytes(f.maxBytes() != null ? f.maxBytes() : 5_242_880L);
+            } else {
+                row.setMaxFiles(null);
+                row.setMaxBytes(null);
+            }
+            certificateTypeFieldRepository.save(row);
+        }
+    }
+
+    private static String normalizeCode(String code) {
+        return code == null ? "" : code.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private static String trimToNull(String s) {
+        if (s == null) {
+            return null;
+        }
+        String t = s.trim();
+        return t.isEmpty() ? null : t;
     }
 }

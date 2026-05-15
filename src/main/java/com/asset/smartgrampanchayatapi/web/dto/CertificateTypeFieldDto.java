@@ -31,8 +31,7 @@ public record CertificateTypeFieldDto(
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) int sortOrder,
         @Schema(description = "For SELECT: [{\"value\":\"X\",\"label_mr\":\"…\",\"label_en\":\"…\"}]") JsonNode optionsJson,
         Integer maxFiles,
-        Long maxBytes,
-        String allowedMimeCsv
+        Long maxBytes
 ) {
     public static CertificateTypeFieldDto fromEntity(CertificateTypeField e) {
         return new CertificateTypeFieldDto(
@@ -49,8 +48,7 @@ public record CertificateTypeFieldDto(
                 e.getSortOrder(),
                 e.getOptionsJson(),
                 e.getMaxFiles() != null ? e.getMaxFiles().intValue() : null,
-                e.getMaxBytes(),
-                e.getAllowedMimeCsv()
+                e.getMaxBytes()
         );
     }
 }
