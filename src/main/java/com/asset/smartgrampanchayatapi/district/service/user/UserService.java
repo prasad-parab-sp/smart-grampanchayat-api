@@ -115,6 +115,41 @@ public class UserService {
     }
 
     /**
+     * Verifies an active staff user on the current tenant shard by id (no password).
+     * Used for notice creation after web admin login; callers must only send the logged-in user's id.
+     */
+    public ShardUser verifyActiveStaffForNoticeWrite(UUID userId) {
+        return tenantShardRoutingService
+                .runOnShard(
+                        TenantCodeContext.getRequired(),
+                        "Could not verify staff user on district database",
+                        ctx -> {
+                            ShardUser user = userDataAccessService
+                                    .findByTenantIdAndId(ctx.tenantId(), userId)
+                                    .orElseThrow(() -> new ResponseStatusException(
+                                            HttpStatus.UNAUTHORIZED,
+                                            "Unknown staff user."
+                                    ));
+                            if (!user.isActive()) {
+                                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is inactive.");
+                            }
+                            UserRole effective = user.effectiveRoleAt(Instant.now());
+                            if (effective == UserRole.VIEWER) {
+                                throw new ResponseStatusException(
+                                        HttpStatus.FORBIDDEN,
+                                        "Viewers cannot manage notices."
+                                );
+                            }
+                            return Optional.of(user);
+                        }
+                )
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Unknown tenant code."
+                ));
+    }
+
+    /**
      * Sets or clears temporary role elevation for a user in the current tenant shard.
      * Clears when {@code elevatedRole}, {@code actingFrom}, and {@code actingUntil} are all null.
      */
