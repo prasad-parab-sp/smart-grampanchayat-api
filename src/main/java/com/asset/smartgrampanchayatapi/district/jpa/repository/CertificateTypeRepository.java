@@ -105,4 +105,8 @@ public interface CertificateTypeRepository extends JpaRepository<CertificateType
     boolean existsPlatformCertificateTypeWithCodeIgnoreCase(@Param("code") String code);
 
     boolean existsByTenantIdAndCode(UUID tenantId, String code);
+
+    Optional<CertificateType> findByIdAndTenantId(UUID id, UUID tenantId);
+
+    List<CertificateType> findByTenantIdOrderBySortOrderAscNameMrAsc(UUID tenantId);
 }

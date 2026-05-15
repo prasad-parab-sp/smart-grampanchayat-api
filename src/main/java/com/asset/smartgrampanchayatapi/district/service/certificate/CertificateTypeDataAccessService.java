@@ -9,6 +9,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -103,6 +104,7 @@ public class CertificateTypeDataAccessService {
     @Transactional(transactionManager = "districtTransactionManager")
     public CertificateTypeDto insertTenantCertificateType(TenantShardRoutingContext ctx, CertificateTypeUpsertRequest req) {
         validateInsert(req, ctx.tenantId());
+        validateExtraFields(extraFieldRows(req));
         Instant now = Instant.now();
         UUID id = UUID.randomUUID();
         CertificateType ct = new CertificateType();
@@ -110,6 +112,42 @@ public class CertificateTypeDataAccessService {
         ct.setTenantId(ctx.tenantId());
         applyTypeFields(ct, req, now);
         certificateTypeRepository.saveAndFlush(ct);
+        insertExtraFields(id, extraFieldRows(req));
+        return toDtoWithFields(ct);
+    }
+
+    @Transactional(transactionManager = "districtTransactionManager", readOnly = true)
+    public List<CertificateType> findTenantOwnedCertificateTypes(UUID tenantId) {
+        return certificateTypeRepository.findByTenantIdOrderBySortOrderAscNameMrAsc(tenantId);
+    }
+
+    @Transactional(transactionManager = "districtTransactionManager", readOnly = true)
+    public Optional<CertificateType> findTenantOwnedCertificateTypeById(UUID tenantId, UUID id) {
+        return certificateTypeRepository.findByIdAndTenantId(id, tenantId);
+    }
+
+    /**
+     * Updates a tenant-owned {@code certificate_type} and replaces {@code certificate_type_field} rows.
+     * Catalog {@code code} is not changed.
+     */
+    @Transactional(transactionManager = "districtTransactionManager")
+    public CertificateTypeDto updateTenantCertificateType(
+            TenantShardRoutingContext ctx,
+            UUID id,
+            CertificateTypeUpsertRequest req
+    ) {
+        CertificateType ct = certificateTypeRepository
+                .findByIdAndTenantId(id, ctx.tenantId())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Tenant certificate type not found."
+                ));
+        validateExtraFields(extraFieldRows(req));
+        Instant now = Instant.now();
+        applyMutableTypeFields(ct, req, now);
+        certificateTypeRepository.saveAndFlush(ct);
+        // delete the existing extra fields and insert the new ones
+        certificateTypeFieldRepository.deleteByCertificateTypeId(id);
         insertExtraFields(id, extraFieldRows(req));
         return toDtoWithFields(ct);
     }
@@ -144,7 +182,9 @@ public class CertificateTypeDataAccessService {
                     "A certificate type with this code already exists for this tenant."
             );
         }
-        List<CertificateTypeFieldUpsertRequest> fields = extraFieldRows(req);
+    }
+
+    private void validateExtraFields(List<CertificateTypeFieldUpsertRequest> fields) {
         if (fields.size() > MAX_EXTRA_FIELDS) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
@@ -169,8 +209,7 @@ public class CertificateTypeDataAccessService {
         }
     }
 
-    private static void applyTypeFields(CertificateType ct, CertificateTypeUpsertRequest req, Instant now) {
-        ct.setCode(normalizeCode(req.code()));
+    private static void applyMutableTypeFields(CertificateType ct, CertificateTypeUpsertRequest req, Instant now) {
         ct.setCategory(req.category());
         ct.setNameMr(req.nameMr().trim());
         ct.setNameEn(trimToNull(req.nameEn()));
@@ -182,11 +221,21 @@ public class CertificateTypeDataAccessService {
         ct.setDefaultFeeAmount(fee);
         ct.setEstimatedDaysTxt(trimToNull(req.estimatedDaysTxt()));
         String icon = trimToNull(req.icon());
-        ct.setIcon(icon != null ? icon : DEFAULT_CERTIFICATE_TYPE_ICON);
+        if (icon != null) {
+            ct.setIcon(icon);
+        }
         ct.setSortOrder(req.sortOrder());
         ct.setActive(req.active());
-        ct.setCreatedAt(now);
         ct.setUpdatedAt(now);
+    }
+
+    private static void applyTypeFields(CertificateType ct, CertificateTypeUpsertRequest req, Instant now) {
+        ct.setCode(normalizeCode(req.code()));
+        applyMutableTypeFields(ct, req, now);
+        if (trimToNull(req.icon()) == null) {
+            ct.setIcon(DEFAULT_CERTIFICATE_TYPE_ICON);
+        }
+        ct.setCreatedAt(now);
     }
 
     private void insertExtraFields(UUID certificateTypeId, List<CertificateTypeFieldUpsertRequest> fields) {
