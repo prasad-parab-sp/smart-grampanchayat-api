@@ -144,6 +144,7 @@ public class CertificateDocumentFormatDataAccessService {
         }
     }
 
+    // we are not sending certitifcate type id inteaad we send certitifcate type code in payload to edit update the certificate format
     private UUID resolveCertificateTypeIdOrNull(UUID tenantId, String rawCode) {
         String code = rawCode == null ? "" : rawCode.trim();
         if (code.isEmpty()) {

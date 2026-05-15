@@ -90,7 +90,6 @@ CREATE TABLE IF NOT EXISTS certificate_type_field (
     options_json           JSONB,
     max_files              SMALLINT DEFAULT 1,
     max_bytes              BIGINT DEFAULT 5242880,
-    allowed_mime_csv       VARCHAR(300),
     CONSTRAINT ck_certificate_type_field_datatype CHECK (
         data_type IN ('TEXT', 'TEXTAREA', 'DATE', 'NUMBER', 'SELECT', 'FILE')
     ),

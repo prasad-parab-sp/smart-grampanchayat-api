@@ -6,7 +6,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.asset.smartgrampanchayatapi.district.jpa.model.CertificateType;
 import com.asset.smartgrampanchayatapi.district.jpa.model.CertificateTypeCategory;
@@ -16,6 +18,7 @@ import com.asset.smartgrampanchayatapi.district.routing.TenantCodeContext;
 import com.asset.smartgrampanchayatapi.district.service.routing.TenantShardRoutingService;
 import com.asset.smartgrampanchayatapi.web.dto.CertificateTypeDto;
 import com.asset.smartgrampanchayatapi.web.dto.CertificateTypeFieldDto;
+import com.asset.smartgrampanchayatapi.web.dto.CertificateTypeUpsertRequest;
 
 @Service
 public class CertificateTypeService {
@@ -69,6 +72,22 @@ public class CertificateTypeService {
                     return Optional.of(items);
                 }
         );
+    }
+
+    /**
+     * Persists a new tenant-scoped {@code certificate_type} row (and optional {@code certificate_type_field} rows).
+     */
+    public CertificateTypeDto createCertificateType(CertificateTypeUpsertRequest body) {
+        return tenantShardRoutingService
+                .runOnShard(
+                        TenantCodeContext.getRequired(),
+                        "Could not create certificate type on district database",
+                        ctx -> Optional.of(certificateTypeDataAccessService.insertTenantCertificateType(ctx, body))
+                )
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Unknown tenant: no master DB row for tenant_code matching X-Tenant-Code."
+                ));
     }
 
     /**

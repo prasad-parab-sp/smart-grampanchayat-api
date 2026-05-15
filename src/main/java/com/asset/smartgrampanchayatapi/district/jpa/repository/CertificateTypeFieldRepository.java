@@ -12,4 +12,6 @@ public interface CertificateTypeFieldRepository extends JpaRepository<Certificat
 
     List<CertificateTypeField> findByCertificateTypeIdInOrderByCertificateTypeIdAscSortOrderAsc(
             Collection<UUID> certificateTypeIds);
+
+    List<CertificateTypeField> findByCertificateTypeIdOrderBySortOrderAsc(UUID certificateTypeId);
 }

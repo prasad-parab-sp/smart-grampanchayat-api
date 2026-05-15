@@ -153,10 +153,10 @@ ON CONFLICT (certificate_type_id, field_key) DO NOTHING;
 
 INSERT INTO certificate_type_field (
     certificate_type_id, field_key, label_mr, placeholder_mr, data_type, required, sort_order,
-    max_files, allowed_mime_csv
+    max_files
 )
 SELECT ct.id, 'invitation_card', 'लग्नपत्रिका / निमंत्रण', 'फोटो किंवा PDF', 'FILE', FALSE, 50,
-    1, 'image/jpeg,image/png,application/pdf'
+    1
 FROM certificate_type ct WHERE ct.code = 'VIVAH_DAKHALA' AND ct.tenant_id IS NULL
 ON CONFLICT (certificate_type_id, field_key) DO NOTHING;
 
@@ -170,17 +170,17 @@ ON CONFLICT (certificate_type_id, field_key) DO NOTHING;
 
 INSERT INTO certificate_type_field (
     certificate_type_id, field_key, label_mr, data_type, required, sort_order,
-    max_files, allowed_mime_csv
+    max_files
 )
-SELECT ct.id, 'aadhar_scan', 'आधार कार्ड', 'FILE', TRUE, 20, 1, 'image/jpeg,image/png,application/pdf'
+SELECT ct.id, 'aadhar_scan', 'आधार कार्ड', 'FILE', TRUE, 20, 1
 FROM certificate_type ct WHERE ct.code = 'UTPADNA_DAKHALA' AND ct.tenant_id IS NULL
 ON CONFLICT (certificate_type_id, field_key) DO NOTHING;
 
 INSERT INTO certificate_type_field (
     certificate_type_id, field_key, label_mr, data_type, required, sort_order,
-    max_files, allowed_mime_csv
+    max_files
 )
-SELECT ct.id, 'income_proof', 'उत्पन्न पुरावा', 'FILE', TRUE, 30, 2, 'image/jpeg,image/png,application/pdf'
+SELECT ct.id, 'income_proof', 'उत्पन्न पुरावा', 'FILE', TRUE, 30, 2
 FROM certificate_type ct WHERE ct.code = 'UTPADNA_DAKHALA' AND ct.tenant_id IS NULL
 ON CONFLICT (certificate_type_id, field_key) DO NOTHING;
 
@@ -224,10 +224,10 @@ ON CONFLICT (certificate_type_id, field_key) DO NOTHING;
 
 INSERT INTO certificate_type_field (
     certificate_type_id, field_key, label_mr, placeholder_mr, data_type, required, sort_order,
-    max_files, allowed_mime_csv
+    max_files
 )
 SELECT ct.id, 'hospital_discharge_death_doc', 'रुग्णालय दाखला / डॉक्टर प्रमाणपत्र (आहे तर)', 'PDF किंवा फोटो', 'FILE', FALSE, 50,
-    1, 'image/jpeg,image/png,application/pdf'
+    1
 FROM certificate_type ct WHERE ct.code = 'MRUTYU_DAKHALA' AND ct.tenant_id IS NULL
 ON CONFLICT (certificate_type_id, field_key) DO NOTHING;
 
