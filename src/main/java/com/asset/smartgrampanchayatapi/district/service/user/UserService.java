@@ -115,6 +115,90 @@ public class UserService {
     }
 
     /**
+     * Verifies an active staff user allowed to manage the tax type catalog (GP admin or gramsevak).
+     */
+    public ShardUser verifyActiveStaffForTaxCatalogWrite(UUID userId) {
+        return tenantShardRoutingService
+                .runOnShard(
+                        TenantCodeContext.getRequired(),
+                        "Could not verify staff user on district database",
+                        ctx -> {
+                            ShardUser user = userDataAccessService
+                                    .findByTenantIdAndId(ctx.tenantId(), userId)
+                                    .orElseThrow(() -> new ResponseStatusException(
+                                            HttpStatus.UNAUTHORIZED,
+                                            "Unknown staff user."
+                                    ));
+                            if (!user.isActive()) {
+                                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is inactive.");
+                            }
+                            UserRole effective = user.effectiveRoleAt(Instant.now());
+                            if (effective == UserRole.VIEWER) {
+                                throw new ResponseStatusException(
+                                        HttpStatus.FORBIDDEN,
+                                        "Viewers cannot manage tax types."
+                                );
+                            }
+                            if (effective != UserRole.GRAMSEVAK
+                                    && effective != UserRole.GP_ADMIN
+                                    && effective != UserRole.SYS_ADMIN) {
+                                throw new ResponseStatusException(
+                                        HttpStatus.FORBIDDEN,
+                                        "Only gramsevak or GP admin can manage tax types."
+                                );
+                            }
+                            return Optional.of(user);
+                        }
+                )
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Unknown tenant code."
+                ));
+    }
+
+    /**
+     * Verifies an active staff user allowed to manage citizen tax demands and payments.
+     */
+    public ShardUser verifyActiveStaffForTaxWrite(UUID userId) {
+        return tenantShardRoutingService
+                .runOnShard(
+                        TenantCodeContext.getRequired(),
+                        "Could not verify staff user on district database",
+                        ctx -> {
+                            ShardUser user = userDataAccessService
+                                    .findByTenantIdAndId(ctx.tenantId(), userId)
+                                    .orElseThrow(() -> new ResponseStatusException(
+                                            HttpStatus.UNAUTHORIZED,
+                                            "Unknown staff user."
+                                    ));
+                            if (!user.isActive()) {
+                                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is inactive.");
+                            }
+                            UserRole effective = user.effectiveRoleAt(Instant.now());
+                            if (effective == UserRole.VIEWER) {
+                                throw new ResponseStatusException(
+                                        HttpStatus.FORBIDDEN,
+                                        "Viewers cannot manage taxes."
+                                );
+                            }
+                            if (effective != UserRole.GRAMSEVAK
+                                    && effective != UserRole.OPERATOR
+                                    && effective != UserRole.SYS_ADMIN) {
+                                throw new ResponseStatusException(
+                                        HttpStatus.FORBIDDEN,
+                                        "Only gramsevak or operator can manage citizen taxes."
+                                );
+                            }
+                            return Optional.of(user);
+                        }
+                )
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Unknown tenant code."
+                ));
+    }
+
+    /**
      * Verifies an active staff user on the current tenant shard by id (no password).
      * Used for notice creation after web admin login; callers must only send the logged-in user's id.
      */
