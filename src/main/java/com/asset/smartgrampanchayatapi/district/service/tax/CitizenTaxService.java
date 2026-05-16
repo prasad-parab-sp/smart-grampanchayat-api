@@ -13,8 +13,11 @@ import com.asset.smartgrampanchayatapi.district.routing.TenantCodeContext;
 import com.asset.smartgrampanchayatapi.district.service.citizen.CitizenDataAccessService;
 import com.asset.smartgrampanchayatapi.district.service.routing.TenantShardRoutingService;
 import com.asset.smartgrampanchayatapi.district.service.user.UserService;
+import com.asset.smartgrampanchayatapi.web.dto.CitizenTaxBulkCreateRequest;
+import com.asset.smartgrampanchayatapi.web.dto.CitizenTaxBulkCreateResultDto;
 import com.asset.smartgrampanchayatapi.web.dto.CitizenTaxCreateRequest;
 import com.asset.smartgrampanchayatapi.web.dto.CitizenTaxDto;
+import com.asset.smartgrampanchayatapi.web.dto.CitizenTaxWaiveRequest;
 import com.asset.smartgrampanchayatapi.web.dto.TaxPaymentCreateRequest;
 import com.asset.smartgrampanchayatapi.web.dto.TaxPaymentDto;
 
@@ -65,6 +68,22 @@ public class CitizenTaxService {
         );
     }
 
+    public CitizenTaxBulkCreateResultDto bulkCreateCitizenTaxes(CitizenTaxBulkCreateRequest request) {
+        userService.verifyActiveStaffForTaxWrite(request.staffUserId());
+        return tenantShardRoutingService
+                .runOnShard(
+                        TenantCodeContext.getRequired(),
+                        "Could not create citizen taxes on district database",
+                        ctx -> Optional.of(
+                                citizenTaxDataAccessService.bulkInsertCitizenTaxes(ctx, request)
+                        )
+                )
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Unknown tenant code."
+                ));
+    }
+
     public CitizenTaxDto createCitizenTax(UUID citizenId, CitizenTaxCreateRequest request) {
         userService.verifyActiveStaffForTaxWrite(request.staffUserId());
         return tenantShardRoutingService
@@ -100,6 +119,32 @@ public class CitizenTaxService {
                     return Optional.of(citizenTaxDataAccessService.listPayments(ctx.tenantId(), citizenTaxId));
                 }
         );
+    }
+
+    public CitizenTaxDto waiveTax(UUID citizenTaxId, CitizenTaxWaiveRequest request) {
+        userService.verifyActiveStaffForTaxWrite(request.staffUserId());
+        return tenantShardRoutingService
+                .runOnShard(
+                        TenantCodeContext.getRequired(),
+                        "Could not waive tax on district database",
+                        ctx -> {
+                            if (citizenTaxDataAccessService.findById(ctx.tenantId(), citizenTaxId).isEmpty()) {
+                                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Citizen tax not found.");
+                            }
+                            return Optional.of(
+                                    citizenTaxDataAccessService.waiveTax(
+                                            ctx.tenantId(),
+                                            citizenTaxId,
+                                            request.staffUserId(),
+                                            request
+                                    )
+                            );
+                        }
+                )
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Unknown tenant code."
+                ));
     }
 
     public TaxPaymentDto recordPayment(UUID citizenTaxId, TaxPaymentCreateRequest request) {

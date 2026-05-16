@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -16,8 +17,11 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.asset.smartgrampanchayatapi.district.jpa.model.CitizenTaxStatus;
 import com.asset.smartgrampanchayatapi.district.service.tax.CitizenTaxService;
+import com.asset.smartgrampanchayatapi.web.dto.CitizenTaxBulkCreateRequest;
+import com.asset.smartgrampanchayatapi.web.dto.CitizenTaxBulkCreateResultDto;
 import com.asset.smartgrampanchayatapi.web.dto.CitizenTaxCreateRequest;
 import com.asset.smartgrampanchayatapi.web.dto.CitizenTaxDto;
+import com.asset.smartgrampanchayatapi.web.dto.CitizenTaxWaiveRequest;
 import com.asset.smartgrampanchayatapi.web.dto.TaxPaymentCreateRequest;
 import com.asset.smartgrampanchayatapi.web.dto.TaxPaymentDto;
 import com.asset.smartgrampanchayatapi.web.filter.TenantCodeHeaderFilter;
@@ -68,6 +72,15 @@ public class CitizenTaxController {
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
+    @PostMapping("/api/citizen-taxes/bulk")
+    @Operation(summary = "Assign the same tax demand to one or more citizens")
+    @Parameter(name = TenantCodeHeaderFilter.HEADER_TENANT_CODE, in = ParameterIn.HEADER, required = true)
+    @ApiResponse(responseCode = "201", content = @Content(schema = @Schema(implementation = CitizenTaxBulkCreateResultDto.class)))
+    public ResponseEntity<CitizenTaxBulkCreateResultDto> bulkCreate(@Valid @RequestBody CitizenTaxBulkCreateRequest body) {
+        CitizenTaxBulkCreateResultDto result = citizenTaxService.bulkCreateCitizenTaxes(body);
+        return ResponseEntity.status(HttpStatus.CREATED).body(result);
+    }
+
     @GetMapping("/api/citizen-taxes")
     @Operation(summary = "List tax demands for the tenant (optional filters)")
     @Parameter(name = TenantCodeHeaderFilter.HEADER_TENANT_CODE, in = ParameterIn.HEADER, required = true)
@@ -103,6 +116,16 @@ public class CitizenTaxController {
                 .listPayments(id)
                 .map(ResponseEntity::ok)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Citizen tax not found."));
+    }
+
+    @PatchMapping("/api/citizen-taxes/{id}/waive")
+    @Operation(summary = "Waive outstanding tax for a citizen demand")
+    @Parameter(name = TenantCodeHeaderFilter.HEADER_TENANT_CODE, in = ParameterIn.HEADER, required = true)
+    public ResponseEntity<CitizenTaxDto> waive(
+            @PathVariable("id") UUID id,
+            @Valid @RequestBody CitizenTaxWaiveRequest body
+    ) {
+        return ResponseEntity.ok(citizenTaxService.waiveTax(id, body));
     }
 
     @PostMapping("/api/citizen-taxes/{id}/payments")

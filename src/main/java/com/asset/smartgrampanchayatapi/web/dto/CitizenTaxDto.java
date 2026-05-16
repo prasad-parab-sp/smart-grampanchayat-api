@@ -14,6 +14,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record CitizenTaxDto(
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) UUID id,
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) UUID citizenId,
+        String citizenFirstName,
+        String citizenLastName,
+        String citizenMobile,
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) UUID taxTypeId,
         String taxTypeNameEn,
         String taxTypeNameMr,
@@ -28,10 +31,19 @@ public record CitizenTaxDto(
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) Instant createdAt,
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) Instant updatedAt
 ) {
-    public static CitizenTaxDto fromEntity(CitizenTax row, TaxTypeDto taxType) {
+    public static CitizenTaxDto fromEntity(
+            CitizenTax row,
+            TaxTypeDto taxType,
+            String citizenFirstName,
+            String citizenLastName,
+            String citizenMobile
+    ) {
         return new CitizenTaxDto(
                 row.getId(),
                 row.getCitizenId(),
+                citizenFirstName,
+                citizenLastName,
+                citizenMobile,
                 row.getTaxTypeId(),
                 taxType != null ? taxType.nameEn() : null,
                 taxType != null ? taxType.nameMr() : null,

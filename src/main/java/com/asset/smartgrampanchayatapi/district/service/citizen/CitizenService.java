@@ -83,4 +83,5 @@ public class CitizenService {
                 ctx -> citizenDataAccessService.findByIdAndTenantId(id, ctx.tenantId())
         );
     }
+
 }

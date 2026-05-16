@@ -49,7 +49,7 @@ public class TaxTypeService {
     }
 
     public TaxTypeDto createTaxType(TaxTypeCreateRequest request) {
-        userService.verifyActiveStaffForTaxWrite(request.staffUserId());
+        userService.verifyActiveStaffForTaxCatalogWrite(request.staffUserId());
         return tenantShardRoutingService
                 .runOnShard(
                         TenantCodeContext.getRequired(),
@@ -65,7 +65,7 @@ public class TaxTypeService {
     }
 
     public TaxTypeDto updateTaxType(UUID id, TaxTypePatchRequest request) {
-        userService.verifyActiveStaffForTaxWrite(request.staffUserId());
+        userService.verifyActiveStaffForTaxCatalogWrite(request.staffUserId());
         return tenantShardRoutingService
                 .runOnShard(
                         TenantCodeContext.getRequired(),

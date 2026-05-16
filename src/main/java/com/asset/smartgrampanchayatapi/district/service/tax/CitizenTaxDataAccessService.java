@@ -5,8 +5,11 @@ import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -15,16 +18,22 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.asset.smartgrampanchayatapi.district.jpa.model.Citizen;
 import com.asset.smartgrampanchayatapi.district.jpa.model.CitizenTax;
 import com.asset.smartgrampanchayatapi.district.jpa.model.CitizenTaxStatus;
 import com.asset.smartgrampanchayatapi.district.jpa.model.TaxPayment;
 import com.asset.smartgrampanchayatapi.district.jpa.model.TaxPaymentMode;
 import com.asset.smartgrampanchayatapi.district.jpa.model.TaxType;
+import com.asset.smartgrampanchayatapi.district.jpa.repository.CitizenRepository;
 import com.asset.smartgrampanchayatapi.district.jpa.repository.CitizenTaxRepository;
 import com.asset.smartgrampanchayatapi.district.jpa.repository.TaxPaymentRepository;
 import com.asset.smartgrampanchayatapi.district.jpa.repository.TaxTypeRepository;
 import com.asset.smartgrampanchayatapi.district.service.routing.TenantShardRoutingContext;
+import com.asset.smartgrampanchayatapi.web.dto.CitizenTaxBulkCreateRequest;
+import com.asset.smartgrampanchayatapi.web.dto.CitizenTaxBulkCreateResultDto;
+import com.asset.smartgrampanchayatapi.web.dto.CitizenTaxBulkFailureDto;
 import com.asset.smartgrampanchayatapi.web.dto.CitizenTaxCreateRequest;
+import com.asset.smartgrampanchayatapi.web.dto.CitizenTaxWaiveRequest;
 import com.asset.smartgrampanchayatapi.web.dto.CitizenTaxDto;
 import com.asset.smartgrampanchayatapi.web.dto.TaxPaymentCreateRequest;
 import com.asset.smartgrampanchayatapi.web.dto.TaxPaymentDto;
@@ -36,15 +45,18 @@ public class CitizenTaxDataAccessService {
     private static final DateTimeFormatter RECEIPT_DATE = DateTimeFormatter.ofPattern("yyyyMMdd");
 
     private final CitizenTaxRepository citizenTaxRepository;
+    private final CitizenRepository citizenRepository;
     private final TaxTypeRepository taxTypeRepository;
     private final TaxPaymentRepository taxPaymentRepository;
 
     public CitizenTaxDataAccessService(
             CitizenTaxRepository citizenTaxRepository,
+            CitizenRepository citizenRepository,
             TaxTypeRepository taxTypeRepository,
             TaxPaymentRepository taxPaymentRepository
     ) {
         this.citizenTaxRepository = citizenTaxRepository;
+        this.citizenRepository = citizenRepository;
         this.taxTypeRepository = taxTypeRepository;
         this.taxPaymentRepository = taxPaymentRepository;
     }
@@ -118,6 +130,54 @@ public class CitizenTaxDataAccessService {
         return toDto(ctx.tenantId(), citizenTaxRepository.save(row));
     }
 
+    @Transactional(transactionManager = "districtTransactionManager")
+    public CitizenTaxBulkCreateResultDto bulkInsertCitizenTaxes(
+            TenantShardRoutingContext ctx,
+            CitizenTaxBulkCreateRequest body
+    ) {
+        Set<UUID> uniqueCitizenIds = new LinkedHashSet<>(body.citizenIds());
+        List<CitizenTaxDto> created = new ArrayList<>();
+        List<CitizenTaxBulkFailureDto> failures = new ArrayList<>();
+        CitizenTaxCreateRequest single = new CitizenTaxCreateRequest(
+                body.staffUserId(),
+                body.taxTypeId(),
+                body.financialYear(),
+                body.assessmentNumber(),
+                body.amountAssessed(),
+                body.dueDate(),
+                body.remarks()
+        );
+        for (UUID citizenId : uniqueCitizenIds) {
+            Citizen citizen = citizenRepository.findByIdAndTenantId(citizenId, ctx.tenantId()).orElse(null);
+            if (citizen == null) {
+                failures.add(new CitizenTaxBulkFailureDto(citizenId, null, "Citizen not found for this tenant."));
+                continue;
+            }
+            String label = citizenLabel(citizen);
+            try {
+                created.add(insertCitizenTax(ctx, citizenId, body.staffUserId(), single));
+            } catch (ResponseStatusException ex) {
+                String reason = ex.getReason() != null ? ex.getReason() : ex.getMessage();
+                failures.add(new CitizenTaxBulkFailureDto(citizenId, label, reason));
+            }
+        }
+        if (created.isEmpty() && !failures.isEmpty()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "No tax demands were created. Check failures for each citizen."
+            );
+        }
+        return new CitizenTaxBulkCreateResultDto(created.size(), failures.size(), created, failures);
+    }
+
+    private static String citizenLabel(Citizen citizen) {
+        String name = (citizen.getFirstName() + " " + citizen.getLastName()).trim();
+        if (!name.isBlank()) {
+            return name;
+        }
+        return citizen.getMobile() != null ? citizen.getMobile() : citizen.getId().toString();
+    }
+
     @Transactional(transactionManager = "districtTransactionManager", readOnly = true)
     public List<TaxPaymentDto> listPayments(UUID tenantId, UUID citizenTaxId) {
         requireCitizenTax(tenantId, citizenTaxId);
@@ -175,6 +235,28 @@ public class CitizenTaxDataAccessService {
         return TaxPaymentDto.fromEntity(payment);
     }
 
+    @Transactional(transactionManager = "districtTransactionManager")
+    public CitizenTaxDto waiveTax(UUID tenantId, UUID citizenTaxId, UUID staffUserId, CitizenTaxWaiveRequest body) {
+        CitizenTax tax = requireCitizenTax(tenantId, citizenTaxId);
+        if (tax.getStatus() == CitizenTaxStatus.WAIVED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tax is already waived.");
+        }
+        if (tax.getStatus() == CitizenTaxStatus.PAID) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot waive a fully paid tax.");
+        }
+        if (tax.getStatus() == CitizenTaxStatus.CANCELLED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot waive a cancelled tax.");
+        }
+        Instant now = Instant.now();
+        tax.setStatus(CitizenTaxStatus.WAIVED);
+        tax.setAmountOutstanding(BigDecimal.ZERO);
+        if (body.remarks() != null && !body.remarks().isBlank()) {
+            tax.setRemarks(body.remarks().trim());
+        }
+        tax.setUpdatedAt(now);
+        return toDto(tenantId, citizenTaxRepository.save(tax));
+    }
+
     private CitizenTax requireCitizenTax(UUID tenantId, UUID citizenTaxId) {
         return citizenTaxRepository
                 .findByTenantIdAndId(tenantId, citizenTaxId)
@@ -202,7 +284,14 @@ public class CitizenTaxDataAccessService {
                 .findByTenantIdAndId(tenantId, row.getTaxTypeId())
                 .map(TaxTypeDto::fromEntity)
                 .orElse(null);
-        return CitizenTaxDto.fromEntity(row, taxType);
+        Citizen citizen = citizenRepository.findByIdAndTenantId(row.getCitizenId(), tenantId).orElse(null);
+        return CitizenTaxDto.fromEntity(
+                row,
+                taxType,
+                citizen != null ? citizen.getFirstName() : null,
+                citizen != null ? citizen.getLastName() : null,
+                citizen != null ? citizen.getMobile() : null
+        );
     }
 
     static String normalizeFinancialYear(String value) {
