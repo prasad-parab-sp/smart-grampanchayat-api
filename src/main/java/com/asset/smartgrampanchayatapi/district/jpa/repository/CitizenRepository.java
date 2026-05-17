@@ -33,4 +33,8 @@ public interface CitizenRepository extends JpaRepository<Citizen, UUID> {
      */
     Optional<Citizen> findByTenantIdAndGrampanchayatIdAndMobile(
             UUID tenantId, UUID grampanchayatId, String mobile);
+
+    List<Citizen> findAllByTenantIdAndDeletedAtIsNullOrderByLastNameAscFirstNameAsc(UUID tenantId);
+
+    long countByTenantIdAndDeletedAtIsNull(UUID tenantId);
 }
