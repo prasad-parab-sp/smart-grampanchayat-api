@@ -199,6 +199,40 @@ public class UserService {
     }
 
     /**
+     * Verifies an active gramsevak or sarpanch may manage the citizen / villager register.
+     */
+    public ShardUser verifyActiveStaffForCitizenRegisterWrite(UUID userId) {
+        return tenantShardRoutingService
+                .runOnShard(
+                        TenantCodeContext.getRequired(),
+                        "Could not verify staff user on district database",
+                        ctx -> {
+                            ShardUser user = userDataAccessService
+                                    .findByTenantIdAndId(ctx.tenantId(), userId)
+                                    .orElseThrow(() -> new ResponseStatusException(
+                                            HttpStatus.UNAUTHORIZED,
+                                            "Unknown staff user."
+                                    ));
+                            if (!user.isActive()) {
+                                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is inactive.");
+                            }
+                            UserRole effective = user.effectiveRoleAt(Instant.now());
+                            if (effective != UserRole.GRAMSEVAK && effective != UserRole.SARPANCH) {
+                                throw new ResponseStatusException(
+                                        HttpStatus.FORBIDDEN,
+                                        "Only gramsevak or sarpanch can manage the citizen register."
+                                );
+                            }
+                            return Optional.of(user);
+                        }
+                )
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Unknown tenant code."
+                ));
+    }
+
+    /**
      * Verifies an active staff user on the current tenant shard by id (no password).
      * Used for notice creation after web admin login; callers must only send the logged-in user's id.
      */

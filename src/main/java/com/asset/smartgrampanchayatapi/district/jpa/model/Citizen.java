@@ -146,6 +146,11 @@ public class Citizen {
     protected Citizen() {
     }
 
+    /** New row for persistence (JPA requires no-arg ctor; use this from services). */
+    public static Citizen newRow() {
+        return new Citizen();
+    }
+
     public UUID getId() {
         return id;
     }
