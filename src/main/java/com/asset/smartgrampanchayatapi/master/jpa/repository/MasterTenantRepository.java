@@ -14,4 +14,8 @@ public interface MasterTenantRepository extends JpaRepository<MasterTenant, UUID
 
     @EntityGraph(attributePaths = "district")
     Optional<MasterTenant> findByTenantCode(String tenantCode);
+
+    boolean existsByTenantCode(String tenantCode);
+
+    boolean existsByTenantId(String tenantId);
 }

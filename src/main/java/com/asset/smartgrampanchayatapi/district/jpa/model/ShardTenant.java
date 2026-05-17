@@ -86,6 +86,10 @@ public class ShardTenant {
     protected ShardTenant() {
     }
 
+    public static ShardTenant newRow() {
+        return new ShardTenant();
+    }
+
     public UUID getId() {
         return id;
     }
