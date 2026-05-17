@@ -7,7 +7,9 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.asset.smartgrampanchayatapi.district.jpa.model.PlanType;
 import com.asset.smartgrampanchayatapi.district.jpa.model.ShardTenant;
+import com.asset.smartgrampanchayatapi.district.jpa.model.TenantStatus;
 import com.asset.smartgrampanchayatapi.district.jpa.repository.ShardTenantRepository;
 import com.asset.smartgrampanchayatapi.master.jpa.model.District;
 import com.asset.smartgrampanchayatapi.web.dto.TenantCreateRequest;
@@ -51,8 +53,8 @@ public class ShardTenantDataAccessService {
         row.setDistrictNameMr(coalesceDisplay(district.getDisplayNameMr(), district.getName()));
         row.setTalukaEn(trimToNull(body.talukaEn()));
         row.setTalukaMr(trimToNull(body.talukaMr()));
-        row.setStatus(body.resolvedStatus());
-        row.setPlanType(body.resolvedPlanType());
+        row.setStatus(TenantStatus.fromApiValue(body.resolvedStatus()));
+        row.setPlanType(PlanType.fromApiValue(body.resolvedPlanType()));
         row.setSubscriptionStartDate(body.subscriptionStartDate());
         row.setSubscriptionEndDate(body.subscriptionEndDate());
         row.setMaxUsers(body.maxUsers());

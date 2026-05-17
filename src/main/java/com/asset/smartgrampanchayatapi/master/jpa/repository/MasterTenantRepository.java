@@ -18,4 +18,8 @@ public interface MasterTenantRepository extends JpaRepository<MasterTenant, UUID
     boolean existsByTenantCode(String tenantCode);
 
     boolean existsByTenantId(String tenantId);
+
+    long count();
+
+    long countByStatusIgnoreCase(String status);
 }

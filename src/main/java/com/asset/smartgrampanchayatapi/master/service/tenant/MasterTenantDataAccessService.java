@@ -19,7 +19,7 @@ public class MasterTenantDataAccessService {
         this.masterTenantRepository = masterTenantRepository;
     }
 
-    @Transactional(transactionManager = "transactionManager")
+    @Transactional(transactionManager = "masterTransactionManager")
     public MasterTenant insertTenant(UUID id, District district, TenantCreateRequest body, String tenantCode, String tenantId) {
         MasterTenant row = MasterTenant.newRow();
         row.setId(id);
@@ -34,7 +34,7 @@ public class MasterTenantDataAccessService {
         return masterTenantRepository.save(row);
     }
 
-    @Transactional(transactionManager = "transactionManager")
+    @Transactional(transactionManager = "masterTransactionManager")
     public void deleteById(UUID id) {
         masterTenantRepository.deleteById(id);
     }

@@ -12,4 +12,8 @@ import com.asset.smartgrampanchayatapi.master.jpa.model.District;
 public interface DistrictRepository extends JpaRepository<District, UUID> {
 
     Optional<District> findByDistrictCode(String districtCode);
+
+    long count();
+
+    long countByStatusIgnoreCase(String status);
 }

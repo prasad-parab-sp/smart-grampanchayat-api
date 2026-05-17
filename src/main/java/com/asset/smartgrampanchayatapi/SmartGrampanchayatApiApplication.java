@@ -9,9 +9,10 @@ import com.asset.smartgrampanchayatapi.district.config.DistrictShardProperties;
 import com.asset.smartgrampanchayatapi.master.config.DistrictCredentialEncryptionProperties;
 import com.asset.smartgrampanchayatapi.master.jpa.model.District;
 import com.asset.smartgrampanchayatapi.master.jpa.model.MasterTenant;
+import com.asset.smartgrampanchayatapi.master.jpa.model.SuperAdmin;
 
 @SpringBootApplication
-@EntityScan(basePackageClasses = { MasterTenant.class, District.class })
+@EntityScan(basePackageClasses = { MasterTenant.class, District.class, SuperAdmin.class })
 @EnableConfigurationProperties({ DistrictShardProperties.class, DistrictCredentialEncryptionProperties.class })
 public class SmartGrampanchayatApiApplication {
 
