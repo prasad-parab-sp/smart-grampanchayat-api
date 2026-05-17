@@ -12,4 +12,8 @@ import com.asset.smartgrampanchayatapi.district.jpa.model.ShardTenant;
 public interface ShardTenantRepository extends JpaRepository<ShardTenant, UUID> {
 
     Optional<ShardTenant> findByTenantCode(String tenantCode);
+
+    boolean existsByTenantCode(String tenantCode);
+
+    boolean existsByGpCode(String gpCode);
 }

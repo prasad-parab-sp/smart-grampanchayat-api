@@ -6,7 +6,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.security.crypto.bcrypt.BCrypt;
+import com.asset.smartgrampanchayatapi.common.security.PasswordHashVerifier;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -305,13 +305,6 @@ public class UserService {
     }
 
     private boolean isPasswordMatch(String rawPassword, String storedHash) {
-        if (storedHash == null || storedHash.isBlank()) {
-            return false;
-        }
-        if (storedHash.startsWith("$2a$") || storedHash.startsWith("$2b$") || storedHash.startsWith("$2y$")) {
-            return BCrypt.checkpw(rawPassword, storedHash);
-        }
-        // Backward-compatible fallback for plain text values used in local/dev data.
-        return storedHash.equals(rawPassword);
+        return PasswordHashVerifier.matches(rawPassword, storedHash);
     }
 }

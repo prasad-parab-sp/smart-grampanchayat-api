@@ -18,12 +18,15 @@ import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * Requires {@value #HEADER_TENANT_CODE} on {@code /api/**} calls except CORS preflight, and except
- * {@code GET /api/tenants?tenantCode=...} (bootstrap lookup without a header).
+ * {@code GET /api/tenants?tenantCode=...} (bootstrap lookup without a header), and
+ * {@code POST /api/tenants} (provision a new tenant before a code exists), and
+ * {@code /api/platform/**} (master super-admin login and platform stats).
  */
 public class TenantCodeHeaderFilter extends OncePerRequestFilter {
 
     public static final String HEADER_TENANT_CODE = "X-Tenant-Code";
 
+    private static final String PLATFORM_PATH_PREFIX = "/api/platform/";
     private static final String TENANTS_PATH = "/api/tenants";
     private static final String PARAM_TENANT_CODE = "tenantCode";
 
@@ -50,7 +53,7 @@ public class TenantCodeHeaderFilter extends OncePerRequestFilter {
             return;
         }
 
-        if (isTenantBootstrapLookup(request)) {
+        if (isPlatformApi(request) || isTenantBootstrapLookup(request) || isTenantProvision(request)) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -69,6 +72,10 @@ public class TenantCodeHeaderFilter extends OncePerRequestFilter {
         }
     }
 
+    private static boolean isPlatformApi(HttpServletRequest request) {
+        return request.getServletPath().startsWith(PLATFORM_PATH_PREFIX);
+    }
+
     private static boolean isTenantBootstrapLookup(HttpServletRequest request) {
         if (!"GET".equalsIgnoreCase(request.getMethod())) {
             return false;
@@ -78,6 +85,10 @@ public class TenantCodeHeaderFilter extends OncePerRequestFilter {
         }
         String p = request.getParameter(PARAM_TENANT_CODE);
         return p != null && !p.isBlank();
+    }
+
+    private static boolean isTenantProvision(HttpServletRequest request) {
+        return "POST".equalsIgnoreCase(request.getMethod()) && TENANTS_PATH.equals(request.getServletPath());
     }
 
     private void sendMissingHeader(HttpServletResponse response, HttpServletRequest request) throws IOException {

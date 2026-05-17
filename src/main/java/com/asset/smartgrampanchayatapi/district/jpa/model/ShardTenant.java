@@ -4,6 +4,9 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -50,11 +53,13 @@ public class ShardTenant {
     @Column(name = "taluka_mr", length = 255)
     private String talukaMr;
 
-    @Column(nullable = false, length = 32)
-    private String status;
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(nullable = false, columnDefinition = "tenant_status")
+    private TenantStatus status;
 
-    @Column(name = "plan_type", nullable = false, length = 32)
-    private String planType;
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "plan_type", nullable = false, columnDefinition = "plan_type")
+    private PlanType planType;
 
     @Column(name = "subscription_start_date")
     private LocalDate subscriptionStartDate;
@@ -84,6 +89,10 @@ public class ShardTenant {
     private Instant updatedAt;
 
     protected ShardTenant() {
+    }
+
+    public static ShardTenant newRow() {
+        return new ShardTenant();
     }
 
     public UUID getId() {
@@ -174,19 +183,19 @@ public class ShardTenant {
         this.talukaMr = talukaMr;
     }
 
-    public String getStatus() {
+    public TenantStatus getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(TenantStatus status) {
         this.status = status;
     }
 
-    public String getPlanType() {
+    public PlanType getPlanType() {
         return planType;
     }
 
-    public void setPlanType(String planType) {
+    public void setPlanType(PlanType planType) {
         this.planType = planType;
     }
 

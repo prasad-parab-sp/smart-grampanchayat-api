@@ -55,6 +55,10 @@ public class MasterTenant {
     protected MasterTenant() {
     }
 
+    public static MasterTenant newRow() {
+        return new MasterTenant();
+    }
+
     public UUID getId() {
         return id;
     }
