@@ -7,6 +7,9 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
  * Master-database JPA repositories (mirrors {@code district.jpa.repository} for shard DB).
  */
 @Configuration
-@EnableJpaRepositories(basePackages = "com.asset.smartgrampanchayatapi.master.jpa.repository")
+@EnableJpaRepositories(
+        basePackages = "com.asset.smartgrampanchayatapi.master.jpa.repository",
+        transactionManagerRef = "transactionManager"
+)
 public class MasterJpaRepositoriesConfiguration {
 }
